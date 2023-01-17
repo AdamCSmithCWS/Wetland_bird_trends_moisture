@@ -5,6 +5,14 @@
 library(bbsBayes)
 
 
+bbsBayes::copy_model_file(model = "gamye",
+                          model_variant = "spatial",
+                          "models")
+
+
+
+
+
 
 
 
