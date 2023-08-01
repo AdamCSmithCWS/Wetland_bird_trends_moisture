@@ -86,7 +86,51 @@ rhat_fail_summ <- rhat_fail %>%
 
 
 
-# indices and trends ------------------------------------------------------
+# Covariate version -------------------------------------------------------
+
+
+bbsBayes2::copy_model_file(model,model_variant,
+                           dir = "models")
+
+## re-write model to add the following bits
+# data {
+#   ...
+#   // covariate data
+#   array[n_strata,n_years] real cov;   // covariate data annual moisture by strata
+#   ...
+# }
+# parameters {
+#   ...
+#   // covariate
+#   real beta_cov; // simple linear coefficient of covariate effect on annual fluctuations
+#   ...
+# }
+# transformed parameters {
+#   ...
+#   // yeareffects as an additive combination of a random fluctuation
+#   // and the simple linear effect of the annual moisture covariate
+#   // may not be sufficient data to estimate both, in which case
+#   // consider removing yeareffect_raw and sdyear
+#   for(s in 1:n_strata){
+#     yeareffect[s,] = sdyear[s]*yeareffect_raw[s,] + beta_cov*cov[s,];
+#   }
+#   ...
+# }
+# model {
+#   ...
+#   // covariate effect
+#   beta_cov ~ normal(0,1); //prior for covariate effect
+#   ...
+# }
+
+
+ cov_mod <- "models/gamye_spatial_bbs_CV_year_effect_covariate.stan"
+
+
+
+
+
+ # indices and trends ------------------------------------------------------
 
 
 inds <- generate_indices(fit)
