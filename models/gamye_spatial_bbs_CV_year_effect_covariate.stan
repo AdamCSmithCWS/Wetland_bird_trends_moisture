@@ -34,6 +34,10 @@ data {
 
   int<lower=1> n_observers;// number of observers
 
+  // covariate data
+  array[n_strata,n_years] real cov;              // observer indicators
+
+
   // array data to estimate annual indices using only observer-site combinations that are in each stratum
   array[n_strata] int<lower=0> n_obs_sites_strata; // number of observer-site combinations in each stratum
   int<lower=0> max_n_obs_sites_strata; //largest value of n_obs_sites_strata
@@ -122,6 +126,9 @@ parameters {
   vector[n_knots_year] BETA_raw;//_raw;
   matrix[n_strata,n_knots_year] beta_raw;         // GAM strata level parameters
 
+// covariate
+  real beta_cov; //coefficient of covariate effect on annual fluctuations
+
 }
 
 transformed parameters {
@@ -156,9 +163,12 @@ transformed parameters {
      smooth_pred[,s] = year_basis * transpose(beta[s,]);
 }
 
+// yeareffects as an additive combination of a random fluctuation
+// and the effect of the annual moisture covariate
+// may not be sufficient data to estimate both, in which case
+// remove yeareffect_raw and sdyear
 for(s in 1:n_strata){
-    yeareffect[s,] = sdyear[s]*yeareffect_raw[s,];
-
+    yeareffect[s,] = sdyear[s]*yeareffect_raw[s,] + beta_cov*cov[s,];
 }
 
 // intercepts and slopes
@@ -206,17 +216,24 @@ model {
   }
   sdobs ~ normal(0,0.3); // informative prior on scale of observer effects - suggests observer variation larger than 3-4-fold differences is unlikely
   sdste ~ student_t(3,0,1); //prior on sd of site effects
-  sdyear ~ gamma(2,2); // prior on sd of yeareffects - stratum specific, and boundary-avoiding with a prior mode at 0.5 (1/2) - recommended by https://doi.org/10.1007/s11336-013-9328-2
+  sdyear ~ gamma(2,10); //informative prior on scale of yeareffects
+  // sdyear ~ normal(0,0.3); // alternative informative prior on scale of yeareffects - 99% of prior
+  // // mass is for values < 0.77, suggesting that annual increases of 50% and decreases
+  // // of 35% are relatively common, but 3-4 fold annual increases or decreases are unlikely
   sdBETA ~ student_t(3,0,1); // prior on sd of GAM parameters
-  sdbeta ~ student_t(3,0,1); // prior on sd of GAM parameters
-  sdstrata ~ student_t(3,0,1); //prior on sd of intercept variation
+  sdbeta ~ std_normal(); // prior on sd of GAM parameters
+  // sdbeta ~ student_t(3,0,1); // alternative prior on sd of GAM parameters
+   sdstrata ~ student_t(3,0,1); //prior on sd of intercept variation
+
+// covariate effect
+  beta_cov ~ normal(0,1); //prior for covariate effect
 
 
   obs_raw ~ std_normal(); // ~ student_t(3,0,1);//observer effects
-  //sum(obs_raw) ~ normal(0,0.001*n_observers); // constraint isn't useful here
+  sum(obs_raw) ~ normal(0,0.001*n_observers); // constraint may not be necessary
 
   ste_raw ~ std_normal();//site effects
-  //sum(ste_raw) ~ normal(0,0.001*n_sites); //constraint isn't useful here
+  sum(ste_raw) ~ normal(0,0.001*n_sites); //constraint may not be necessary
 
  for(s in 1:n_strata){
 
