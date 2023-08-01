@@ -35,7 +35,7 @@ data {
   int<lower=1> n_observers;// number of observers
 
   // covariate data
-  array[n_strata,n_years] real cov;              // observer indicators
+  matrix[n_strata,n_years] cov; // strata by year covariate matrix
 
 
   // array data to estimate annual indices using only observer-site combinations that are in each stratum

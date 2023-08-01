@@ -49,7 +49,9 @@ fit <- run_model(pm,
                  iter_sampling = 4000,
                  thin = 2,
                  max_treedepth = 11,
-                 adapt_delta = 0.8)
+                 adapt_delta = 0.8,
+                 output_dir = "output",
+                 output_basename = "base")
 
 summ <- get_summary(fit)
 
@@ -89,9 +91,12 @@ rhat_fail_summ <- rhat_fail %>%
 
 # Covariate version -------------------------------------------------------
 
+# this was run once to create a base file to modify
+# bbsBayes2::copy_model_file(model,model_variant,
+#                            dir = "models")
+# the modifiations below were made to the .stan file and then saved as
+# "models/gamye_spatial_bbs_CV_year_effect_covariate.stan"
 
-bbsBayes2::copy_model_file(model,model_variant,
-                           dir = "models")
 
 ## re-write model to add the following bits
 # data {
@@ -102,8 +107,8 @@ bbsBayes2::copy_model_file(model,model_variant,
 # }
 # parameters {
 #   ...
-#   // covariate
-#   real beta_cov; // simple linear coefficient of covariate effect on annual fluctuations
+# // covariate data
+# matrix[n_strata,n_years] cov; // strata by year covariate matrix
 #   ...
 # }
 # transformed parameters {
@@ -129,9 +134,47 @@ bbsBayes2::copy_model_file(model,model_variant,
 
  cov_all <- readRDS("data/annual_latlong_june_spei03.rds")
 
+strata_incl <- ps$meta_strata
+years_incl <- min(ps$raw_data$year) : max(ps$raw_data$year)
+
+cov_incl <-  strata_incl %>%
+  inner_join(.,cov_all,
+             by = "strata_name") %>%
+  select(matches(as.character(years_incl)),
+         strata) %>%
+  arrange(strata) %>%
+  select(-strata) %>%
+  as.matrix()
+
+pm_cov <- prepare_model(ps,
+                        model = model,
+                        model_variant = model_variant,
+                        model_file = cov_mod)
+
+pm_cov$model_data[["cov"]] <- cov_incl
 
 
- # indices and trends ------------------------------------------------------
+fit_cov <- run_model(pm_cov,
+                 refresh = 200,
+                 iter_warmup = 2000,
+                 iter_sampling = 4000,
+                 thin = 2,
+                 max_treedepth = 11,
+                 adapt_delta = 0.8,
+                 output_dir = "output",
+                 output_basename = "covariate")
+
+summ <- get_summary(fit)
+
+
+
+
+
+
+
+
+
+# indices and trends ------------------------------------------------------
 
 
 inds <- generate_indices(fit)
