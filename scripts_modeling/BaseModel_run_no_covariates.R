@@ -1,6 +1,7 @@
 ### running bbsBayes spatial GAMYE model
 
 
+setwd("C:/Users/SmithAC/Documents/GitHub/Wetland_bird_trends_moisture")
 
 library(bbsBayes2)
 library(tidyverse)
@@ -8,12 +9,23 @@ library(tidyverse)
 species <- "Black Tern"
 stratification <- "latlong"
 
+strata_map <- load_map(stratification)
+bcr_11 <- load_map("bcr") %>%
+  filter(strata_name == "BCR11") %>%
+  sf::st_buffer(.,50000) %>% # 50 km buffer to catch all possible BBS routes
+  rename(bcr = strata_name) %>%
+  select(bcr)
+strata_sel <- strata_map %>%
+  sf::st_intersection(.,bcr_11)
+
 model = "gamye"
 
 model_variant <- "spatial"
 
 
-s <- stratify(by = stratification,
+
+s <- stratify(by = "latlong_bcr11",
+              strata_custom = strata_sel,
               species = species)
 
 
@@ -22,7 +34,7 @@ p <- prepare_data(s,
                   min_max_route_years = 6)
 
 ps <- prepare_spatial(p,
-                      strata_map = load_map(stratification))
+                      strata_map = strata_sel)
 
 print(ps$spatial_data$map)
 
@@ -35,9 +47,8 @@ fit <- run_model(pm,
                  iter_warmup = 2000,
                  iter_sampling = 4000,
                  thin = 2,
-                 adapt_delta = 0.8,
-                 output_dir = "output",
-                 output_basename = paste(species,stratification,model,model_variant,sep = "_"))
+                 max_treedepth = 11,
+                 adapt_delta = 0.8)
 
 summ <- get_summary(fit)
 
