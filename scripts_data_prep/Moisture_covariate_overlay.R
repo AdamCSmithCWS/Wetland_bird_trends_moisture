@@ -18,7 +18,7 @@ strata_crs <- st_crs(strata_map)
 ## S.M. Vicente-Serrano, S. Beguería, J.I. López-Moreno. 2010. A Multi-scalar drought index sensitive to global warming: The Standardized Precipitation Evapotranspiration Index – SPEI. Journal of Climate 23: 1696, DOI: 10.1175/2009JCLI2909.1
 
 
-moisture_full = terra::rast("data/spei03.nc")
+moisture_full = terra::rast("data/too_large/spei03.nc")
 
 strata_map = st_transform(strata_map, st_crs(moisture_full))
 moisture = terra::crop(moisture_full, strata_map)
@@ -56,9 +56,12 @@ strata_june_moisture_df <- strata_june_moisture %>%
   pivot_longer(.,all_of(as.character(1966:2021)),
                names_to = "year")
 
-saveRDS(strata_june_moisture, "annual_latlong_june_spei03.rds")
+saveRDS(strata_june_moisture, "data/annual_latlong_june_spei03.rds")
 
-saveRDS(strata_june_moisture_df, "annual_latlong_june_spei03_df.rds")
+saveRDS(strata_june_moisture_df, "data/annual_latlong_june_spei03_df.rds")
+
+
+
 
 
 strata_map_moisture <- strata_map %>%

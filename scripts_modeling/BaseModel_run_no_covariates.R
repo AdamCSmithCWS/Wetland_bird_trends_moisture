@@ -42,6 +42,7 @@ pm <- prepare_model(ps,
                     model = model,
                     model_variant = model_variant)
 
+
 fit <- run_model(pm,
                  refresh = 200,
                  iter_warmup = 2000,
@@ -126,7 +127,7 @@ bbsBayes2::copy_model_file(model,model_variant,
 
  cov_mod <- "models/gamye_spatial_bbs_CV_year_effect_covariate.stan"
 
-
+ cov_all <- readRDS("data/annual_latlong_june_spei03.rds")
 
 
 
