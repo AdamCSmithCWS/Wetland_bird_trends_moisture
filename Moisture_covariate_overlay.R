@@ -52,11 +52,15 @@ strata_names <- strata_map %>%
 strata_june_moisture <- bind_cols(strata_names,strata_june_moisture)
 
 
-strata_june_moisture <- strata_june_moisture %>%
+strata_june_moisture_df <- strata_june_moisture %>%
   pivot_longer(.,all_of(as.character(1966:2021)),
                names_to = "year")
 
 saveRDS(strata_june_moisture, "annual_latlong_june_spei03.rds")
+
+saveRDS(strata_june_moisture_df, "annual_latlong_june_spei03_df.rds")
+
+
 strata_map_moisture <- strata_map %>%
   left_join(strata_june_moisture,
             by = "strata_name")
