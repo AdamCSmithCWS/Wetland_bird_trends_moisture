@@ -18,6 +18,7 @@ bcr_11 <- load_map("bcr") %>%
 strata_sel <- strata_map %>%
   sf::st_intersection(.,bcr_11)
 
+saveRDS(strata_sel,"output/custom_latlong_bcr_stratification.rds")
 model = "gamye"
 
 model_variant <- "spatial"
@@ -52,40 +53,6 @@ fit <- run_model(pm,
                  adapt_delta = 0.8,
                  output_dir = "output",
                  output_basename = "base")
-
-summ <- get_summary(fit)
-
-
-summ <- summ %>%
-  mutate(variable_type = stringr::str_extract(variable, "^\\w+"))
-
-rhat_ess_summ <- summ %>%
-  group_by(variable_type) %>%
-  summarise(n = n(),
-            min_ess = min(ess_bulk),
-            max_rhat = max(rhat),
-            med_ess = median(ess_bulk),
-            med_rhat = median(rhat))
-
-sds <- summ %>% filter(grepl("sd",variable))
-
-beta_raw <- summ %>% filter(variable_type == "beta_raw")
-
-ess_fail <- summ %>% filter(ess_bulk < 1000)
-
-ess_fail_summ <- ess_fail %>%
-  group_by(variable_type) %>%
-  summarise(n = n(),
-            min_ess = min(ess_bulk),
-            max_rhat = max(rhat))
-
-rhat_fail <- summ %>% filter(rhat > 1.03)
-
-rhat_fail_summ <- rhat_fail %>%
-  group_by(variable_type) %>%
-  summarise(n = n(),
-            min_ess = min(ess_bulk),
-            max_rhat = max(rhat))
 
 
 
@@ -163,44 +130,6 @@ fit_cov <- run_model(pm_cov,
                  adapt_delta = 0.8,
                  output_dir = "output",
                  output_basename = "covariate")
-
-summ <- get_summary(fit)
-
-
-
-
-
-
-
-
-
-# indices and trends ------------------------------------------------------
-
-
-inds <- generate_indices(fit)
-
-inds_smooth <- generate_indices(fit,
-                                alternate_n = "n_smooth")
-
-
-inds <- generate_indices(fit)
-inds_smooth <- generate_indices(fit,
-                                alternate_n = "n_smooth")
-
-
-trends <- generate_trends(inds_smooth)
-
-pdf("figures/rolling_shorttrends_spatial.pdf")
-map <- plot_map(trends)
-print(map)
-
-for(ys in seq(1970,2011,by = 5)){
-  tt <- generate_trends(inds_smooth,
-                        min_year = ys,
-                        max_year = ys + 10)
-  print(plot_map(tt))
-}
-dev.off()
 
 
 
