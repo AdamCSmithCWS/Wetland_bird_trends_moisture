@@ -10,16 +10,16 @@ species <- "Black Tern"
 stratification <- "latlong"
 
 strata_map <- load_map(stratification)
-# bcr_11 <- load_map("bcr") %>%
-#   filter(strata_name == "BCR11") %>%
-#   sf::st_buffer(.,50000) %>% # 50 km buffer to catch all possible BBS routes
-#   rename(bcr = strata_name) %>%
-#   select(bcr)
-# strata_sel <- strata_map %>%
-#   sf::st_intersection(.,bcr_11)
+bcr_11 <- load_map("bcr") %>%
+  filter(strata_name == "BCR11") %>%
+  sf::st_buffer(.,50000) %>% # 50 km buffer to catch all possible BBS routes
+  rename(bcr = strata_name) %>%
+  select(bcr)
+strata_sel <- strata_map %>%
+  sf::st_intersection(.,bcr_11)
 
-# saveRDS(strata_sel,"output/custom_latlong_bcr_stratification.rds")
-#
+saveRDS(strata_sel,"output/custom_latlong_bcr_stratification.rds")
+
 
 model = "gamye"
 
@@ -27,7 +27,8 @@ model_variant <- "spatial"
 
 
 
-s <- stratify(by = "latlong",
+s <- stratify(by = "latlong_bcr11",
+              strata_custom = strata_sel,
               species = species)
 
 
@@ -36,7 +37,7 @@ p <- prepare_data(s,
                   min_max_route_years = 6)
 
 ps <- prepare_spatial(p,
-                      strata_map = strata_map)
+                      strata_map = strata_sel)
 
 print(ps$spatial_data$map)
 

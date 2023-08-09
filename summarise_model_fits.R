@@ -7,7 +7,7 @@ library(patchwork)
 BLTE_gen = 5.682 # generation time for Black Tern - Bird et al. 2020
 BLTE_3Gen = round(BLTE_gen*3) # Three generations to calculate COSEWIC and IUCN trend thresholds
 
-strata_sel <- readRDS("output/custom_latlong_bcr_stratification.rds")
+#strata_sel <- readRDS("output/custom_latlong_bcr_stratification.rds")
 
 # load the fitted models --------------------------------------------------
 
@@ -63,15 +63,22 @@ trends_cov_3gen$trends[1,c("prob_decrease_0_percent","prob_decrease_30_percent",
 
 
 # Trend maps --------------------------------------------------------------
+#
+# map_cov_long <- plot_map(trends,
+#                          strata_custom = strata_sel)
+# map_cov_3gen <- plot_map(trends_cov_3gen,
+#                          strata_custom = strata_sel)
+# map_long <- plot_map(trends,
+#                      strata_custom = strata_sel)
+# map_3gen <- plot_map(trends_3gen,
+#                      strata_custom = strata_sel)
 
-map_cov_long <- plot_map(trends,
-                         strata_custom = strata_sel)
-map_cov_3gen <- plot_map(trends_cov_3gen,
-                         strata_custom = strata_sel)
-map_long <- plot_map(trends,
-                     strata_custom = strata_sel)
-map_3gen <- plot_map(trends_3gen,
-                     strata_custom = strata_sel)
+
+
+map_cov_long <- plot_map(trends)
+map_cov_3gen <- plot_map(trends_cov_3gen)
+map_long <- plot_map(trends)
+map_3gen <- plot_map(trends_3gen)
 
 
 
