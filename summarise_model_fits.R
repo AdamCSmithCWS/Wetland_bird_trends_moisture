@@ -15,8 +15,8 @@ BLTE_3Gen = round(BLTE_gen*3) # Three generations to calculate COSEWIC and IUCN 
 fit <- readRDS("output/base.rds") # read in the base model fit
 fit_cov <- readRDS("output/covariate.rds") # read in the covariate model fit
 
-summ <- readRDS("output/convergence_parameter_summaries.rds")
-summ %>% filter(variable == "beta_cov")
+# summ <- readRDS("output/convergence_parameter_summaries.rds")
+# summ %>% filter(variable == "beta_cov")
 
 # trajectories trends and maps --------------------------------------------
 
@@ -75,10 +75,14 @@ trends_cov_3gen$trends[1,c("prob_decrease_0_percent","prob_decrease_30_percent",
 
 
 
-map_cov_long <- plot_map(trends)
-map_cov_3gen <- plot_map(trends_cov_3gen)
-map_long <- plot_map(trends)
-map_3gen <- plot_map(trends_3gen)
+map_cov_long <- plot_map(trends) +
+  labs(subtitle = "Covariate long-term trends")
+map_cov_3gen <- plot_map(trends_cov_3gen)+
+  labs(subtitle = "Covariate three-generation trends")
+map_long <- plot_map(trends)+
+  labs(subtitle = "Base long-term trends")
+map_3gen <- plot_map(trends_3gen)+
+  labs(subtitle = "Base three-generation trends")
 
 
 
@@ -86,4 +90,9 @@ all_maps <- map_long + map_cov_long + map_3gen + map_cov_3gen + plot_layout(ncol
                                                                             nrow = 2,
                                                                             byrow = TRUE,
                                                                             guides = "collect")
+
+pdf("figures/trend_maps.pdf",
+    width = 11,height = 8.5)
 print(all_maps)
+dev.off()
+
