@@ -5,6 +5,7 @@ library(bbsBayes2)
 
 fit <- readRDS("output/base.rds") # read in the base model fit
 fit_cov <- readRDS("output/covariate.rds") # read in the covariate model fit
+fit_cov <- readRDS("output/covariate_varying.rds") # read in the covariate model fit
 
 
 

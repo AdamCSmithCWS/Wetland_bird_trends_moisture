@@ -7,7 +7,23 @@ library(bbsBayes2)
 library(sf)
 library(tidyverse)
 library(exactextractr)
+# Download the Pacific Decadal Oscilation data and save to rds
+ library(rsoi)
+ nao <- download_nao() # Run on February 28, 2022
 
+ # In terms of what values to extract, the authors of that paper found an effect of mean monthly NAOI values
+ # from January to June on subsequent-year survival, but no current-year effect of Sept-Dec/Jan-Feb values
+ # on survival the current year. Honestly though I just re-read that section of the paper several times
+ # (top right paragraph of p. 4) and I’m quite confused about the way they are describing the lagged
+ # effect, and as a result I may be interpreting this wrong. I know the authors and I’m going to send
+ # a query to try to sort that out, so stay tuned. It almost seems like from the way they describe it,
+ # they looked at a 1-year lag effect and a 1-year future effect, but no current-year effect which seems odd…
+ #
+ # I believe for the time series we had talked about a simple early-late split, to separate out the time
+ # of the steep decline to the greater stability.
+
+
+# saveRDS(pdo,file = "data/pdo.rds")
 #load the strata map
 strata_map <- bbsBayes2::load_map("latlong")
 strata_crs <- st_crs(strata_map)

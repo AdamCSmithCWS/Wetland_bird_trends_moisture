@@ -230,7 +230,8 @@ model {
    sdstrata ~ student_t(3,0,1); //prior on sd of intercept variation
 
 // covariate effect
-  beta_cov_raw ~ normal(0,1); //prior for non-centered covariate effect
+  //beta_cov_raw ~ normal(0,1); //prior for non-centered covariate effect
+  beta_cov_raw ~ icar_normal(n_strata, node1, node2); // prior for spatially varying covariate
   BETA_cov ~ normal(0,1); //prior for mean covariate effect
   sd_beta_cov ~ normal(0,1); //prior on variance of covariate effect
 
@@ -258,7 +259,7 @@ model {
 
 
 for(k in 1:n_knots_year){
-    beta_raw[,k] ~ icar_normal(n_strata, node1, node2);;
+    beta_raw[,k] ~ icar_normal(n_strata, node1, node2);
 }
    strata_raw ~ icar_normal(n_strata, node1, node2);
     //sum(strata_raw) ~ normal(0,0.001*n_strata);

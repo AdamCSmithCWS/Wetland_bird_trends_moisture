@@ -109,7 +109,7 @@ fit <- run_model(pm,
 # }
 
 
- cov_mod <- "models/gamye_spatial_bbs_CV_year_effect_covariate.stan"
+ cov_mod <- "models/gamye_spatial_bbs_CV_year_effect_covariate_varying.stan"
 
  cov_all <- readRDS("data/annual_latlong_june_spei03.rds")
 
@@ -141,7 +141,7 @@ fit_cov <- run_model(pm_cov,
                  max_treedepth = 11,
                  adapt_delta = 0.8,
                  output_dir = "output",
-                 output_basename = "covariate")
+                 output_basename = "covariate_varying")
 
 
 
