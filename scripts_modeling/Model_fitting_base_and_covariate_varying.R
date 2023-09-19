@@ -21,6 +21,8 @@ strata_map <- load_map(stratification)
 # saveRDS(strata_sel,"output/custom_latlong_bcr_stratification.rds")
 #
 
+
+
 model = "gamye"
 
 model_variant <- "spatial"
@@ -30,23 +32,28 @@ model_variant <- "spatial"
 s <- stratify(by = "latlong",
               species = species)
 
+for(ey in c(1995,2021,2021)){
+
+  sy <- ifelse(full_time,1966,ey-26)
 
 p <- prepare_data(s,
                   min_n_routes = 1,
-                  min_max_route_years = 6)
+                  min_max_route_years = 6,
+                  max_year = ey,
+                  min_year = sy)
 
 ps <- prepare_spatial(p,
                       strata_map = strata_map)
 
 print(ps$spatial_data$map)
-
+saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
 pm <- prepare_model(ps,
                     model = model,
                     model_variant = model_variant)
 
 
 fit <- run_model(pm,
-                 refresh = 200,
+                 refresh = 400,
                  iter_warmup = 2000,
                  iter_sampling = 4000,
                  thin = 2,

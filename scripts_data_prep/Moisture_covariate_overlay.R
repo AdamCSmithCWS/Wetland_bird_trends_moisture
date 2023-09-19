@@ -7,9 +7,14 @@ library(bbsBayes2)
 library(sf)
 library(tidyverse)
 library(exactextractr)
-# Download the Pacific Decadal Oscilation data and save to rds
- library(rsoi)
- nao <- download_nao() # Run on February 28, 2022
+# Download the Nroth Atlantic Oscilation data and save to rds
+# nao <- read.fwf(file = "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii.table",
+#                   header = FALSE,
+#                 skip = 1,
+#                 widths = c(5, rep(7,12)),
+#                 strip.white = TRUE,
+#                 col.names = c("year",month.name)) # accessed on September 18, 2023
+saveRDS(nao,file = "data/nao.rds")
 
  # In terms of what values to extract, the authors of that paper found an effect of mean monthly NAOI values
  # from January to June on subsequent-year survival, but no current-year effect of Sept-Dec/Jan-Feb values
