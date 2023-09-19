@@ -14,9 +14,9 @@ library(exactextractr)
 #                 widths = c(5, rep(7,12)),
 #                 strip.white = TRUE,
 #                 col.names = c("year",month.name)) # accessed on September 18, 2023
-saveRDS(nao,file = "data/nao.rds")
+#saveRDS(nao,file = "data/nao.rds")
 
- # In terms of what values to extract, the authors of that paper found an effect of mean monthly NAOI values
+# In terms of what values to extract, the authors of that paper found an effect of mean monthly NAOI values
  # from January to June on subsequent-year survival, but no current-year effect of Sept-Dec/Jan-Feb values
  # on survival the current year. Honestly though I just re-read that section of the paper several times
  # (top right paragraph of p. 4) and I’m quite confused about the way they are describing the lagged
@@ -38,7 +38,7 @@ strata_crs <- st_crs(strata_map)
 
 ## S.M. Vicente-Serrano, S. Beguería, J.I. López-Moreno. 2010. A Multi-scalar drought index sensitive to global warming: The Standardized Precipitation Evapotranspiration Index – SPEI. Journal of Climate 23: 1696, DOI: 10.1175/2009JCLI2909.1
 
-
+# These are the means for the preceeding 3 months "spei03"
 moisture_full = terra::rast("data/too_large/spei03.nc")
 
 strata_map = st_transform(strata_map, st_crs(moisture_full))
@@ -53,7 +53,7 @@ spei_dates <- data.frame(col_names = names(strata_moisture),
                           month = rep(1:12,times = 122),
                           year = rep(1901:2022,each = 12))
 
-
+# june 3-month spei values (april, May, June)
 june_spei <- spei_dates %>%
   filter(month == 6,
          year %in% 1966:2021)
