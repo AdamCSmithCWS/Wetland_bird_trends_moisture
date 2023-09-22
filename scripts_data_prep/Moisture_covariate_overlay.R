@@ -56,7 +56,7 @@ spei_dates <- data.frame(col_names = names(strata_moisture),
 # june 3-month spei values (april, May, June)
 june_spei <- spei_dates %>%
   filter(month == 6,
-         year %in% 1966:2021)
+         year %in% 1966:2022)
 
 
 strata_june_moisture <- strata_moisture %>%
@@ -74,7 +74,7 @@ strata_june_moisture <- bind_cols(strata_names,strata_june_moisture)
 
 
 strata_june_moisture_df <- strata_june_moisture %>%
-  pivot_longer(.,all_of(as.character(1966:2021)),
+  pivot_longer(.,all_of(as.character(1966:2022)),
                names_to = "year")
 
 saveRDS(strata_june_moisture, "data/annual_latlong_june_spei03.rds")
@@ -84,16 +84,16 @@ saveRDS(strata_june_moisture_df, "data/annual_latlong_june_spei03_df.rds")
 
 
 
-
-strata_map_moisture <- strata_map %>%
-  left_join(strata_june_moisture,
-            by = "strata_name")
-
-vis_tmp <- ggplot() +
-  geom_sf(data = strata_map_moisture,
-          aes(fill = value))+
-  facet_wrap(vars(year))
-
-vis_tmp
-
+#
+# strata_map_moisture <- strata_map %>%
+#   left_join(strata_june_moisture,
+#             by = "strata_name")
+#
+# vis_tmp <- ggplot() +
+#   geom_sf(data = strata_map_moisture,
+#           aes(fill = value))+
+#   facet_wrap(vars(year))
+#
+# vis_tmp
+#
 

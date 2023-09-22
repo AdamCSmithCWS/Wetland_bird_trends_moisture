@@ -2,7 +2,7 @@
 
 
 setwd("C:/Users/SmithAC/Documents/GitHub/Wetland_bird_trends_moisture")
-setwd("C:/GitHub/Wetland_bird_trends_moisture")
+#setwd("C:/GitHub/Wetland_bird_trends_moisture")
 library(bbsBayes2)
 library(tidyverse)
 
@@ -33,7 +33,7 @@ s <- stratify(by = "latlong",
               species = species)
 yr_pairs <- data.frame(sy = c(1966,1995,1966),
                        ey = c(1995,2022,2022))
-
+#base data prep
 for(j in 1:nrow(yr_pairs)){
 ey <-yr_pairs[j,"ey"]
 sy <- yr_pairs[j,"sy"]
@@ -50,6 +50,16 @@ ps <- prepare_spatial(p,
 print(ps$spatial_data$map)
 saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
 
+
+}
+
+run_base <- FALSE
+for(j in 1:nrow(yr_pairs)){
+  ey <-yr_pairs[j,"ey"]
+  sy <- yr_pairs[j,"sy"]
+
+  ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
+
 if(run_base){
 pm <- prepare_model(ps,
                     model = model,
@@ -64,7 +74,9 @@ fit <- run_model(pm,
                  max_treedepth = 11,
                  adapt_delta = 0.8,
                  output_dir = "output",
-                 output_basename = "base")
+                 output_basename = paste0(sy,"_",ey,"_base"))
+summ <- get_summary(fit)
+saveRDS(summ, paste0("summary_",sy,"_",ey,"_base"))
 
 
 }
@@ -137,7 +149,7 @@ cov_incl <-  strata_incl %>%
   as.matrix()
 
 ## global annual covariate
-lag <- 1 #1-year lag for NAO data
+lag <- 0 #1-year lag for NAO data
 nao <- readRDS("data/nao.rds")
 nao <- nao %>%
   rowwise() %>%
@@ -169,8 +181,8 @@ fit_cov <- run_model(pm_cov,
                  output_dir = "output",
                  output_basename = paste0(sy,"_",ey,"_2covariate_varying"))
 
-
-
+summ <- get_summary(fit_cov)
+saveRDS(summ, paste0("summary_",sy,"_",ey,"_2covariate_varying"))
 
 }#3nd of time-series loops
 
