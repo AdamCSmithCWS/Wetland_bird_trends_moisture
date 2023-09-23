@@ -31,8 +31,10 @@ model_variant <- "spatial"
 
 s <- stratify(by = "latlong",
               species = species)
-yr_pairs <- data.frame(sy = c(1966,1995,1966),
+yr_pairs <- data.frame(sy = c(1970,1995,1970),
                        ey = c(1995,2022,2022))
+
+
 #base data prep
 for(j in 1:nrow(yr_pairs)){
 ey <-yr_pairs[j,"ey"]
