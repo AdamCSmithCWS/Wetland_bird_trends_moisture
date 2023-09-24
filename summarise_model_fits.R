@@ -129,7 +129,7 @@ spei_map <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
   geom_sf(data = map_spei,
-          aes(fill = mean))+
+          aes(fill = q5))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE)+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
@@ -151,7 +151,7 @@ nao_map <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
   geom_sf(data = map_nao,
-          aes(fill = mean))+
+          aes(fill = q5))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE)+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
