@@ -373,7 +373,7 @@ for(y in 1:n_years){
 
 
 
-      n_t[t] = exp(strata[s] + yeareffect[s,y] + (beta_cov[s]*cov[s,y]) + (beta_ann_cov[s]*cov_ann[1,y] + retrans_noise + ste + obs);
+      n_t[t] = exp(strata[s] + yeareffect[s,y] + (beta_cov[s]*cov[s,y]) + (beta_ann_cov[s]*cov_ann[1,y]) + retrans_noise + ste + obs);
       n_t_random[t] = exp(strata[s] + yeareffect[s,y] + retrans_noise + ste + obs);
       }
         n[s,y] = non_zero_weight[s] * mean(n_t);//mean of exponentiated predictions across sites in a stratum

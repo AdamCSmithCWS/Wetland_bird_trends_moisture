@@ -23,7 +23,7 @@ strata_map <- load_map(stratification)
 
 
 
-model = "gamye"
+model = "first_diff"
 
 model_variant <- "spatial"
 
@@ -76,9 +76,9 @@ fit <- run_model(pm,
                  max_treedepth = 11,
                  adapt_delta = 0.8,
                  output_dir = "output",
-                 output_basename = paste0(sy,"_",ey,"_base"))
+                 output_basename = paste0(model,"_",sy,"_",ey,"_base"))
 summ <- get_summary(fit)
-saveRDS(summ, paste0("summary_",sy,"_",ey,"_base"))
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_base"))
 
 
 }
@@ -134,7 +134,8 @@ saveRDS(summ, paste0("summary_",sy,"_",ey,"_base"))
 # }
 
 
- cov_mod <- "models/gamye_spatial_bbs_CV_year_effect_2covariate_varying.stan"
+
+ cov_mod <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varying.stan")
 
  cov_all <- readRDS("data/annual_latlong_june_spei03.rds")
 
@@ -181,10 +182,10 @@ fit_cov <- run_model(pm_cov,
                  max_treedepth = 11,
                  adapt_delta = 0.8,
                  output_dir = "output",
-                 output_basename = paste0(sy,"_",ey,"_2covariate_varying"))
+                 output_basename = paste0(model,"_",sy,"_",ey,"_2covariate_varying"))
 
 summ <- get_summary(fit_cov)
-saveRDS(summ, paste0("summary_",sy,"_",ey,"_2covariate_varying"))
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying"))
 
 }#3nd of time-series loops
 
