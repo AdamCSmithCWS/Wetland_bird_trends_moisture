@@ -6,9 +6,6 @@ library(patchwork)
 
 BLTE_gen = 5.682 # generation time for Black Tern - Bird et al. 2020
 BLTE_3Gen = round(BLTE_gen*3) # Three generations to calculate COSEWIC and IUCN trend thresholds
-yr_pairs <- data.frame(sy = c(1966,1995,1966),
-                       ey = c(1995,2022,2022))
-
 
 #strata_sel <- readRDS("output/custom_latlong_bcr_stratification.rds")
 inds_save <- NULL
@@ -27,7 +24,8 @@ fit_cov <- readRDS(paste0("output/",sy,"_",ey,"_2covariate_varying.rds")) # read
 
 
 # trajectories trends and maps --------------------------------------------
-
+ calc_indices <- FALSE
+if(calc_indices){
   inds_cov <- generate_indices(fit_cov,alternate_n = "n_smooth",
                                hpdi = TRUE)
   saveRDS(inds_cov,paste0("output/inds_cov_smooth_",model,"_",sy,"_",ey,".rds"))
@@ -43,6 +41,12 @@ fit_cov <- readRDS(paste0("output/",sy,"_",ey,"_2covariate_varying.rds")) # read
   indsf <- generate_indices(fit,
                             hpdi = TRUE)
   saveRDS(indsf,paste0("output/inds_base_full_",model,"_",sy,"_",ey,".rds"))
+}else{
+  inds_cov <- readRDS(paste0("output/inds_cov_smooth_",model,"_",sy,"_",ey,".rds"))
+  inds_cov_full <- readRDS(paste0("output/inds_cov_full_",model,"_",sy,"_",ey,".rds"))
+  inds <- readRDS(paste0("output/inds_base_smooth_",model,"_",sy,"_",ey,".rds"))
+  indsf <- readRDS(paste0("output/inds_base_full_",model,"_",sy,"_",ey,".rds"))
+}
 
 
 
@@ -218,13 +222,37 @@ trends_cov_t <- generate_trends(inds_cov, min_year = 1970,
                                 max_year = 2022,
                                 prob_decrease = c(0,30,50),
                                 hpdi = TRUE)
-map_long <- plot_map(trends_cov_t)
+bbox <- load_map("latlong") %>%
+  filter(strata_name %in% fit_cov$meta_strata$strata_name) %>%
+  sf::st_bbox()
+map_long <- plot_map(trends_cov_t)+
+  ggnewscale::new_scale_colour()+
+  geom_sf(data = bcrs,
+          fill = NA,
+          linewidth = 0.5,
+          aes(colour = BLTE_region),
+          show.legend = FALSE)+
+  scale_colour_brewer(palette = "Set2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])
+map_long
+
 
 trends_cov_t <- generate_trends(inds_cov, min_year = 2005,
                                 max_year = 2022,
                                 prob_decrease = c(0,30,50),
                                 hpdi = TRUE)
-map_3g <- plot_map(trends_cov_t)
+map_3g <- plot_map(trends_cov_t)+
+  ggnewscale::new_scale_colour()+
+  geom_sf(data = bcrs,
+          fill = NA,
+          linewidth = 0.5,
+          aes(colour = BLTE_region),
+          show.legend = FALSE)+
+  scale_colour_brewer(palette = "Set2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])
+print(map_3g)
 
 
 pdf(paste0("figures/trend_map_1970-2022.pdf"),
@@ -348,5 +376,5 @@ dev.off()
 
 cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
   mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
-write.csv(cov_hypers,"output/Moisture hyperpriors.csv")
+write.csv(cov_hypers,"output/Moisture hyperparameter estimates.csv")
 
