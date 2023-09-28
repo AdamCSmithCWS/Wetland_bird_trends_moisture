@@ -152,7 +152,7 @@ cov_incl <-  strata_incl %>%
   as.matrix()
 
 ## global annual covariate
-lag <- 0 #1-year lag for NAO data
+lag <- 1 #1-year lag for NAO data
 nao <- readRDS("data/nao.rds")
 nao <- nao %>%
   rowwise() %>%
