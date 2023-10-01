@@ -9,17 +9,25 @@ bibliography: references.bib
 
 We designed a model to estimate the effects of annual weather patterns on abundance of Black-terns on BBS surveys, while accounting for medium- and long-term population trends. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
 
-The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{\rm SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{\rm NAOI}_t$), and an additional random variate ($\varepsilon_{i,t}$).
+The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{\rm SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{\rm NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
 
-$$\gamma_{i,t}= \beta_{1_i}{\rm SPEI}_{i,t}+\beta_{2_i}{\rm NAOI}_t+\varepsilon_{i,t}$$
+$$\gamma_{i,t}= \beta_{1_i}{\rm SPEI}_{i,t}+\beta_{2_i}{\rm NAOI}_{t-1}+\varepsilon_{i,t}$$
 
 
+```{r}
+
+cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
+  mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
+
+```
 
 ## Exploring the spatially varying effects of annual weather
 
 We modeled the stratum-level effect of annual weather as a continuous linear effect that varies in space.
 
 ```{r}
+#| fig-cap: 
+#|   - "Spatially varying effect of spring moisture (June, 3-month SPEI) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of moisture on abundance, red represents negative effects, and white represents no effect. The bottom map represents the lower limit of the 95% credible interval and so blue and white colours represent strata where the positive effect of SPEI is most certain (i.e., the full 95% interval does not overlap 0), and red strata are where the positive effect of spring moisture is less certain."
 # mapping covariates ------------------------------------------------------
 
 cov_spei <- get_summary(fit_cov,variables = "beta_cov") %>%
@@ -71,7 +79,13 @@ spei_map_q5 <- ggplot()+
 
 print(spei_map / spei_map_q5)
 
+```
 
+```{r}
+
+#| fig-cap: 
+#|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of NAOI on abundance, red represents negative effects, and white represents no effect. The bottom map represents the upper limit of the 95% credible interval and so red and white colours represent strata where the negative effect of NAOI is most certain (i.e., the full 95% interval does not overlap 0), and blue strata are where the negative effect of NAOI is less certain."
+#|   
 # NAO effect in space -----------------------------------------------------
 
 
@@ -115,19 +129,7 @@ nao_map_q5 <- ggplot()+
 
 print(nao_map / nao_map_q5)
 
-pdf(paste0("Figures/Spatial variation in SPEI effect.pdf"),
-    width = 9,
-    height = 9)
-print(spei_map / spei_map_q5)
-dev.off()
 
-pdf(paste0("Figures/Spatial variation in NAO effect.pdf"),
-    width = 9,
-    height = 9)
-print(nao_map / nao_map_q5)
-dev.off()
 
-cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
-  mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
 
 ```
