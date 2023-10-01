@@ -1,0 +1,133 @@
+---
+title: "Methods and Results"
+format: pdf
+editor: visual
+bibliography: references.bib
+---
+
+## Annual weather effects on Black-tern abundance and trends
+
+We designed a model to estimate the effects of annual weather patterns on abundance of Black-terns on BBS surveys, while accounting for medium- and long-term population trends. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
+
+The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{\rm SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{\rm NAOI}_t$), and an additional random variate ($\varepsilon_{i,t}$).
+
+$$\gamma_{i,t}= \beta_{1_i}{\rm SPEI}_{i,t}+\beta_{2_i}{\rm NAOI}_t+\varepsilon_{i,t}$$
+
+
+
+## Exploring the spatially varying effects of annual weather
+
+We modeled the stratum-level effect of annual weather as a continuous linear effect that varies in space.
+
+```{r}
+# mapping covariates ------------------------------------------------------
+
+cov_spei <- get_summary(fit_cov,variables = "beta_cov") %>%
+  mutate(strata = row_number(),
+         model = "covariate",
+         base_model = model,
+         predictor = "SPEI")
+
+cov_spei_out <- bind_rows(cov_spei_out,
+                          cov_spei)
+# load original data
+ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
+
+base_map <- load_map(ps$meta_data$stratify_by) %>%
+  inner_join(ps$meta_strata,
+             by = "strata_name")
+
+bbox <- sf::st_bbox(base_map)
+
+strata_map <- load_map("bbs_usgs")
+
+map_spei <- base_map %>%
+  inner_join(.,cov_spei)
+
+
+spei_map <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_spei,
+          aes(fill = mean))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Effect of spring SPEI on annual abundance"))+
+  theme_bw()
+
+spei_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_spei,
+          aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Lower Credible limit (90% CI)"))+
+  theme_bw()
+
+print(spei_map / spei_map_q5)
+
+
+# NAO effect in space -----------------------------------------------------
+
+
+cov_nao <- get_summary(fit_cov,variables = "beta_ann_cov") %>%
+  mutate(strata = row_number(),
+         model = "covariate",
+         base_model = model,
+         predictor = "NAOI")
+
+cov_nao_out <- bind_rows(cov_nao_out,
+                         cov_nao)
+
+map_nao <- base_map %>%
+  inner_join(.,cov_nao,
+             by = "strata")
+
+
+nao_map <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_nao,
+          aes(fill = mean))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Effect of Jan-June NAO (1-year lag) \n on annual abundance"))+
+  theme_bw()
+
+nao_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_nao,
+          aes(fill = q95))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Upper Credible limit (90% CI)"))+
+  theme_bw()
+
+print(nao_map / nao_map_q5)
+
+pdf(paste0("Figures/Spatial variation in SPEI effect.pdf"),
+    width = 9,
+    height = 9)
+print(spei_map / spei_map_q5)
+dev.off()
+
+pdf(paste0("Figures/Spatial variation in NAO effect.pdf"),
+    width = 9,
+    height = 9)
+print(nao_map / nao_map_q5)
+dev.off()
+
+cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
+  mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
+
+```

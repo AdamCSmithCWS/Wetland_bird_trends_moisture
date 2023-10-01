@@ -54,11 +54,11 @@ if(calc_indices){
 
   # table to join BCRs into composite regions
   BLTE_BCR_composites <- data.frame(strata_name = paste0("BCR",c(12,13,23,14,
-                                                    11,17,6,22,
-                                                    10,9,15)),
+                                                    11,17,6,22,18,19,
+                                                    10,9,15,32)),
                                     BLTE_region = c(rep("Great Lakes and East",4),
-                                                    rep("Prairies and Boreal",4),
-                                                    rep("West",3)))
+                                                    rep("Prairies and Boreal",6),
+                                                    rep("West",4)))
 
 
 # compile BCR polygons into composite regions spatial polygons
@@ -67,7 +67,7 @@ if(calc_indices){
                by = "strata_name") %>%
     group_by(BLTE_region) %>%
     summarise()
-
+plot(bcrs)
   # spatial join of composite regions with strata used in analysis
   strata_join <- load_map("latlong") %>%
     filter(strata_name %in% fit_cov$meta_strata$strata_name) %>%
@@ -238,11 +238,11 @@ map_long <- plot_map(trends_cov_t)+
 map_long
 
 
-trends_cov_t <- generate_trends(inds_cov, min_year = 2005,
+trends_cov_t3 <- generate_trends(inds_cov, min_year = 2005,
                                 max_year = 2022,
                                 prob_decrease = c(0,30,50),
                                 hpdi = TRUE)
-map_3g <- plot_map(trends_cov_t)+
+map_3g <- plot_map(trends_cov_t3)+
   ggnewscale::new_scale_colour()+
   geom_sf(data = bcrs,
           fill = NA,
