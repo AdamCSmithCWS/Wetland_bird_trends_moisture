@@ -1,11 +1,13 @@
 ---
 title: "Methods and Results"
-format: pdf
+format: 
+  pdf:
+    fig-pos: 't'
 editor: visual
 bibliography: references.bib
 ---
 
-```{r, echo=FALSE, message=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(bbsBayes2)
 library(patchwork)
@@ -27,7 +29,7 @@ We estimated the spatially-varying component ($\beta_{1_i}^{\prime\prime}$) usin
 $$\beta_{1_i}^{\prime\prime}\sim Normal\left(\frac{\sum_{n{\in N}_i}\beta_{1_i}^{\prime\prime}}{N_i},\frac{\sigma_{\beta_{1_i}^{\prime\prime}}}{N_i}\right)$$
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
   ey <-2022
   sy <- 1966
 
@@ -46,7 +48,7 @@ B2 <- cov_hypers %>%
 
 The overall mean effect of SPEI on annual abundance was positive ($\beta_1^{\prime}=$ `r paste0(round(B1$mean,2)," [",round(B1$q5,2),"-",round(B1$q95,2),"]")`). The effects of SPEI varied across the species' range. It was strongest and clearly positive in the core of the species' range across the southern and central prairie pothole region. In the western and eastern periphery of the species' range the effect was only weakly positive or even slightly negative.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 
 cov_spei <- get_summary(fit_cov,variables = "beta_cov") %>%
@@ -165,7 +167,7 @@ nao2 <- nao_map_q5 / nao_map_q95
 
 ```
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
 #|   - "Spatially varying effect of spring moisture (June, 3-month SPEI) on the annual relative abundance of Black Tern observed during BBS surveys. The colours in the map represent the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of moisture on abundance, red represents negative effects." 
 
@@ -173,17 +175,22 @@ spei_all
 
 ```
 
-```{r}
+{{< pagebreak >}}
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
 #|   - "Maps representing the uncertainty in the effect of the SPEI. Left map represents the lower limit of the 90% Credible Interval and the right map represents the upper limit. Regions that are similar colours in both maps have local effects of SPEI where at least a 95% of the posterior probability is in the same direction (e.g., if regions are blue in both maps, at least 95% of the posterior probability of the effect is positive). In general, these maps show that the local effects of SPEI are clearly positive in the core of the species' range, but weaker and less certain in the western and eastern edges of the range."
+#| fig-height: 8
 
 spei2
 
 ```
 
+{{< pagebreak >}}
+
 The overall mean effect of NAOI on annual abundance was weakly negative but with relatively high uncertainty ($\beta_2^{\prime}=$,`r paste0(round(B2$mean,2)," [",round(B2$q5,2),"-",round(B2$q95,2),"]")`). NAOI had the strongest negative effect in the western Great Lakes region and in the Canadian portion of the Prairie Potholes region. By contrast, in the southern part of the species' range, NAOI had a largely positive effect on annual abundance.
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
 #|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of NAOI on abundance, red represents negative effects, and white represents no effect." 
 
@@ -191,10 +198,20 @@ nao_all
 
 ```
 
-```{r}
+{{< pagebreak >}}
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
 #|   - "Maps representing the uncertainty in the effect of the North Atlantic Oscillation. Left map represents the lower limit of the 90% Credible Interval and the right map represents the upper limit. Regions that are similar colours in both maps have local effects of NAOI where at least a 95% posterior probability is in the same direction (e.g., if regions are blue in both maps, at least 95% of the posterior probability of the effect is positive). In general, these maps show that the local effects of NAOI are somewhat uncertain"
+#| fig-height: 8
 
 nao2
 
 ```
+
+{{< pagebreak >}}
+
+{{< pagebreak >}}
+
+## References Cited
+::: {#refs}
