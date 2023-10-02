@@ -298,7 +298,7 @@ spei_map <- ggplot()+
   geom_sf(data = map_spei,
           aes(fill = mean))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of spring SPEI on annual abundance"))+
@@ -310,13 +310,28 @@ spei_map_q5 <- ggplot()+
   geom_sf(data = map_spei,
           aes(fill = q5))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Lower Credible limit (90% CI)"))+
+  labs(title = paste0("Lower limit (90% CI)"))+
+  theme_bw()
+spei_map_q95 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_spei,
+          aes(fill = q95))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Upper limit (90% CI)"))+
   theme_bw()
 
-print(spei_map / spei_map_q5)
+
+
+spei_all <- spei_map
+spei2 <- spei_map_q5 / spei_map_q95 #+ plot_layout(design = design)
+print(spei_all / spei2)
 
 
 # NAO effect in space -----------------------------------------------------
@@ -342,36 +357,53 @@ nao_map <- ggplot()+
   geom_sf(data = map_nao,
           aes(fill = mean))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of Jan-June NAO (1-year lag) \n on annual abundance"))+
   theme_bw()
 
+
 nao_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_nao,
+          aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Lower limit (90% CI)"))+
+  theme_bw()
+nao_map_q95 <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
   geom_sf(data = map_nao,
           aes(fill = q95))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Upper Credible limit (90% CI)"))+
+  labs(title = paste0("Upper limit (90% CI)"))+
   theme_bw()
 
-print(nao_map / nao_map_q5)
+nao_all <- nao_map
+nao2 <- nao_map_q5 / nao_map_q95
+print(nao_all)
+
 
 pdf(paste0("Figures/Spatial variation in SPEI effect.pdf"),
     width = 9,
     height = 9)
-print(spei_map / spei_map_q5)
+print(spei_all)
+print(spei2)
 dev.off()
 
 pdf(paste0("Figures/Spatial variation in NAO effect.pdf"),
     width = 9,
     height = 9)
-print(nao_map / nao_map_q5)
+print(nao_map)
+print(nao2)
 dev.off()
 
 cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%

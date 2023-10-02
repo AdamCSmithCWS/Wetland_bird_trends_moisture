@@ -11,24 +11,40 @@ We designed a model to estimate the effects of annual weather patterns on abunda
 
 The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{\rm SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{\rm NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
 
-$$\gamma_{i,t}= \beta_{1_i}{\rm SPEI}_{i,t}+\beta_{2_i}{\rm NAOI}_{t-1}+\varepsilon_{i,t}$$
+$$\gamma_{i,t}= \beta_{1_i}{\rm SPEI}_{i,t}+\beta_{2_i}{\rm NAOI}_{t-1}+\varepsilon_{i,t}$$ Each of the stratum-specific parameters for the effects of SPEI ($\beta_{1_i}$) and NAOI ($\beta_{2_i}$), were estimated as a combination of spatially-varying random effects ($\beta_{1_i}^{\prime\prime}$), centered on a mean hyperparameter ($\beta_1^{\prime}$). 
 
+$$\beta_{1_i}=\beta_1^{\prime} + \beta_{1_i}^{\prime\prime}$$
+We estimated the spatially-varying component ($\beta_{1_i}^{\prime\prime}$) using the same intrinsic spatial conditional autoregressive (iCAR) neighbourhood matrix used to estimate the spatially varying population trends ([@smith2023]). This iCAR modelling structure estimates the stratum-level component for each covariate as a normally distributed variate, centered on the mean of the parameters in the surrounding strata, with an estimated among-strata variation. For example, the local component of the effect of SPEI on the annual relative abundance in stratum-i ($\beta_{1_i}^{\prime\prime}$) is a normal random variate centered on the mean of the effect in the set of n-strata that are direct neighbours of stratum-i ($n{\in{N_i}}$), and that has a standard deviation ($\sigma_{\beta_1^{\prime\prime}}$) estimated across the neighbourhood matrix for all strata. 
+
+$$\beta_{1_i}^{\prime\prime}\sim Normal\left(\frac{\sum_{n{\in N}_i}\beta_{1_i}^{\prime\prime}}{N_i},\frac{\sigma_{\beta_{1_i}^{\prime\prime}}}{N_i}\right)$$
 
 ```{r}
+  ey <-2022
+  sy <- 1966
+
+fit_cov <- readRDS(paste0("output/",sy,"_",ey,"_2covariate_varying.rds")) # read in the covariate model fit
 
 cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
   mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
+B1 <- cov_hypers %>% 
+  filter(effect == "Spring SPEI")
+B2 <- cov_hypers %>% 
+  filter(effect == "NAO_lag1")
 
 ```
 
 ## Exploring the spatially varying effects of annual weather
 
-We modeled the stratum-level effect of annual weather as a continuous linear effect that varies in space.
+The overall mean effect of SPEI on annual abundance was positive ($\beta_1^{\prime}=$,`r paste0(round(B1$mean,2)," [",round(B1$q5,2),"-",round(B1$q95,2),"]")`). The effects of SPEI in varied across the species' range. It was strongest and clearly positive in the core of the species' range across the southern and central prairie pothole region. In the western and eastern periphery of the species' range the effect was only weakly positive or even slightly negative. 
+The overall mean effect of NAOI on annual abundance was weakly negative but with relatively high uncertainty  ($\beta_2^{\prime}=$,`r paste0(round(B2$mean,2)," [",round(B2$q5,2),"-",round(B2$q95,2),"]")`). NAOI had the strongest negative effect in the western Great Lakes region and in the Canadian portion of the Prairie Potholes region. By contrast, in the southern part of the species' range, NAOI had a largely positive effect on annual abundance.  
+
+
 
 ```{r}
 #| fig-cap: 
 #|   - "Spatially varying effect of spring moisture (June, 3-month SPEI) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of moisture on abundance, red represents negative effects, and white represents no effect. The bottom map represents the lower limit of the 95% credible interval and so blue and white colours represent strata where the positive effect of SPEI is most certain (i.e., the full 95% interval does not overlap 0), and red strata are where the positive effect of spring moisture is less certain."
 # mapping covariates ------------------------------------------------------
+
 
 cov_spei <- get_summary(fit_cov,variables = "beta_cov") %>%
   mutate(strata = row_number(),
@@ -59,7 +75,7 @@ spei_map <- ggplot()+
   geom_sf(data = map_spei,
           aes(fill = mean))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of spring SPEI on annual abundance"))+
@@ -71,20 +87,36 @@ spei_map_q5 <- ggplot()+
   geom_sf(data = map_spei,
           aes(fill = q5))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Lower Credible limit (90% CI)"))+
+  labs(title = paste0("Lower limit (90% CI)"))+
+  theme_bw()
+spei_map_q95 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_spei,
+          aes(fill = q95))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Upper limit (90% CI)"))+
   theme_bw()
 
-print(spei_map / spei_map_q5)
+
+
+spei_all <- spei_map
+spei2 <- spei_map_q5 / spei_map_q95 #+ plot_layout(design = design)
+print(spei_all / spei2)
+
+
 
 ```
 
 ```{r}
 
-#| fig-cap: 
-#|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of NAOI on abundance, red represents negative effects, and white represents no effect. The bottom map represents the upper limit of the 95% credible interval and so red and white colours represent strata where the negative effect of NAOI is most certain (i.e., the full 95% interval does not overlap 0), and blue strata are where the negative effect of NAOI is less certain."
+
 #|   
 # NAO effect in space -----------------------------------------------------
 
@@ -109,27 +141,46 @@ nao_map <- ggplot()+
   geom_sf(data = map_nao,
           aes(fill = mean))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of Jan-June NAO (1-year lag) \n on annual abundance"))+
   theme_bw()
 
+
 nao_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white")+
+  geom_sf(data = map_nao,
+          aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 2")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Lower limit (90% CI)"))+
+  theme_bw()
+nao_map_q95 <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
   geom_sf(data = map_nao,
           aes(fill = q95))+
   colorspace::scale_fill_continuous_diverging(rev = TRUE,
-                                              palette = "Blue-Red 3")+
+                                              palette = "Blue-Red 2")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Upper Credible limit (90% CI)"))+
+  labs(title = paste0("Upper limit (90% CI)"))+
   theme_bw()
-
-print(nao_map / nao_map_q5)
-
-
+nao_all <- nao_map
+nao2 <- nao_map_q5 / nao_map_q95
 
 
 ```
+
+
+```{r}
+#| fig-cap: 
+#|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of NAOI on abundance, red represents negative effects, and white represents no effect. The bottom map represents the lower and upper limits of the 95% credible interval and so red and white colours represent strata where the negative effect of NAOI is most certain (i.e., the full 95% interval does not overlap 0), and blue strata are where the negative effect of NAOI is less certain."
+
+
+```
+
