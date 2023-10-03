@@ -13,13 +13,16 @@ library(bbsBayes2)
 library(patchwork)
 ```
 
-## Annual weather effects on Black-tern abundance and trends
+## Annual weather effects on Black Tern abundance and trends
 
-We designed a model to estimate the effects of annual weather patterns on abundance of Black-terns on BBS surveys, while accounting for medium- and long-term population trends. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
+We designed a model to estimate the effects of annual weather patterns on abundance of Black Terns on BBS surveys, while accounting for medium- and long-term population trends. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
 
-The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
+The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). In this particular version, we used a spatially explicit, hierarchical model structure to share information on the non-linear smooth component among strata. This spatial model allowed us to fit the model using a relatively fine-grained spatial stratification basend on 1-degree longitude by 1-degree latitude grid ([@smith2023]). The spatially explicit aspects ensure that the medium- and long-term trends can vary among strata, but that trends in nearby strata are more similar than trends in strata further away. The model also included all of the parameters regularly included in models for the BBS data to account for variation among observers, among routes, and first-year observer start-up effects.
+
+We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
 
 $$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\varepsilon_{i,t}$$ 
+
 Each of the stratum-specific parameters for the effects of SPEI ($\beta_{1_i}$) and NAOI ($\beta_{2_i}$), were estimated as a combination of spatially-varying random effects ($\beta_{1_i}^{\prime\prime}$), centered on a mean hyperparameter ($\beta_1^{\prime}$).
 
 $$\beta_{1_i}=\beta_1^{\prime} + \beta_{1_i}^{\prime\prime}$$ 
@@ -44,7 +47,7 @@ B2 <- cov_hypers %>%
 
 ```
 
-## Exploring the spatially varying effects of annual weather
+## Spatially varying effects of Spring Moisture
 
 The overall mean effect of SPEI on annual abundance was positive ($\beta_1^{\prime}=$ `r paste0(round(B1$mean,2)," [",round(B1$q5,2),"-",round(B1$q95,2),"]")`). The effects of SPEI varied across the species' range. It was strongest and clearly positive in the core of the species' range across the southern and central prairie pothole region. In the western and eastern periphery of the species' range the effect was only weakly positive or even slightly negative.
 
@@ -186,13 +189,17 @@ spei2
 
 ```
 
+
+## Spatially varying effects of North Atlantic Oscillation Index
+
+
 {{< pagebreak >}}
 
-The overall mean effect of NAOI on annual abundance was weakly negative but with relatively high uncertainty ($\beta_2^{\prime}=$,`r paste0(round(B2$mean,2)," [",round(B2$q5,2),"-",round(B2$q95,2),"]")`). NAOI had the strongest negative effect in the western Great Lakes region and in the Canadian portion of the Prairie Potholes region. By contrast, in the southern part of the species' range, NAOI had a largely positive effect on annual abundance.
+The overall mean effect of NAOI on annual abundance was generally negative but with relatively high uncertainty ($\beta_2^{\prime}=$,`r paste0(round(B2$mean,2)," [",round(B2$q5,2),"-",round(B2$q95,2),"]")`). NAOI had the strongest negative effect in the western Great Lakes region and in the Canadian portion of the Prairie Pothole region. By contrast, in the southern part of the species' range, NAOI had a largely positive effect on annual abundance.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
-#|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where blue colours represent positive effects of NAOI on abundance, red represents negative effects, and white represents no effect." 
+#|   - "Spatially varying effect of the North Atlantic Oscillation (January - June in year t-1) on the annual relative abundance of Black Tern observed during BBS surveys. The top map shows the mean effect in each of the 1-degree longitude by 1-degree latitude strata, where red colours represent negative effects of NAOI on abundance, and blue represents negative effects." 
 
 nao_all
 
@@ -202,7 +209,7 @@ nao_all
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #| fig-cap: 
-#|   - "Maps representing the uncertainty in the effect of the North Atlantic Oscillation. Left map represents the lower limit of the 90% Credible Interval and the right map represents the upper limit. Regions that are similar colours in both maps have local effects of NAOI where at least a 95% posterior probability is in the same direction (e.g., if regions are blue in both maps, at least 95% of the posterior probability of the effect is positive). In general, these maps show that the local effects of NAOI are somewhat uncertain"
+#|   - "Maps representing the uncertainty in the effect of the North Atlantic Oscillation. Left map represents the lower limit of the 90% Credible Interval and the right map represents the upper limit. Regions that are similar colours in both maps have local effects of NAOI where at least a 95% posterior probability is in the same direction. In general, these maps show that the negative effects of NAOI are somewhat uncertain, as there are no regions where the full 95% CI is below 0"
 #| fig-height: 8
 
 nao2
@@ -213,5 +220,5 @@ nao2
 
 {{< pagebreak >}}
 
-## References Cited
-::: {#refs}
+# References Cited
+

@@ -195,13 +195,14 @@ trends_plot <- ggplot(data = trends_broad)+
   coord_flip()+
   facet_wrap(vars(trend_type))+
   theme_bw()+
-  theme(legend.position = "bottom")+
+  theme(legend.position = "bottom",
+        text = element_text(size = 14))+
   guides(colour = guide_legend(reverse = TRUE,
                                title = ""))
 
 pdf("figures/trends_plot.pdf",
     width = 9,
-    height = 4.5)
+    height = 3)
 trends_plot
 dev.off()
 
