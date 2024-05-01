@@ -6,7 +6,7 @@ library(patchwork)
 
 BLTE_gen = 5.682 # generation time for Black Tern - Bird et al. 2020
 BLTE_3Gen = round(BLTE_gen*3) # Three generations to calculate COSEWIC and IUCN trend thresholds
-yr_pairs <- data.frame(sy = c(1966,1995,1966),
+yr_pairs <- data.frame(sy = c(1970,1995,1970),
                        ey = c(1995,2022,2022))
 
 
@@ -26,8 +26,13 @@ for(j in 1:3){#nrow(yr_pairs)){
 if(!file.exists(paste0("output/",sy,"_",ey,"_base.rds"))){next}
 
 fit <- readRDS(paste0("output/",sy,"_",ey,"_base.rds")) # read in the base model fit
-fit_cov <- readRDS(paste0("output/",sy,"_",ey,"_2covariate_varying.rds")) # read in the covariate model fit
+fit_cov <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying_lag.rds")) # read in the covariate model fit
 
+summ <- readRDS(paste("summary",model,sy,ey,"2covariate_varying_lag.rds",
+                      sep = "_"))
+
+cov_eff <- summ %>%
+  filter(grepl("BETA",variable))
 # summ <- readRDS("output/convergence_parameter_summaries.rds")
 # summ %>% filter(variable == "beta_cov")
 
@@ -314,5 +319,14 @@ dev.off()
 
 }
 }
+
+
+
+
+
+# Centroid of distribution ------------------------------------------------
+
+
+
 
 

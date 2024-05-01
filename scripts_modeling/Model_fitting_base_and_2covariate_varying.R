@@ -23,7 +23,7 @@ strata_map <- load_map(stratification)
 
 
 
-model = "first_diff"
+model = "gamye"
 
 model_variant <- "spatial"
 
@@ -36,7 +36,7 @@ yr_pairs <- data.frame(sy = c(1970,1995,1970),
 
 
 #base data prep
-for(j in 1:nrow(yr_pairs)){
+for(j in nrow(yr_pairs)){
 ey <-yr_pairs[j,"ey"]
 sy <- yr_pairs[j,"sy"]
 
@@ -56,7 +56,7 @@ saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
 }
 
 run_base <- FALSE
-for(j in 1:nrow(yr_pairs)){
+for(j in nrow(yr_pairs)){
   ey <-yr_pairs[j,"ey"]
   sy <- yr_pairs[j,"sy"]
 
@@ -141,6 +141,7 @@ saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_base"))
 
 strata_incl <- ps$meta_strata
 years_incl <- min(ps$raw_data$year) : max(ps$raw_data$year)
+years_incl <- c(min(ps$raw_data$year) : max(ps$raw_data$year))
 
 cov_incl <-  strata_incl %>%
   inner_join(.,cov_all,
@@ -185,7 +186,7 @@ fit_cov <- run_model(pm_cov,
                  output_basename = paste0(model,"_",sy,"_",ey,"_2covariate_varying"))
 
 summ <- get_summary(fit_cov)
-saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying"))
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying.rds"))
 
 }#3nd of time-series loops
 
