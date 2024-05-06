@@ -21,16 +21,15 @@ The model was based on the GAMYE models described in [@smith2020] and [@smith202
 
 We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
 
-$$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\varepsilon_{i,t}$$ 
+$$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\varepsilon_{i,t}$$
 
 Each of the stratum-specific parameters for the effects of SPEI ($\beta_{1_i}$) and NAOI ($\beta_{2_i}$), were estimated as a combination of spatially-varying random effects ($\beta_{1_i}^{\prime\prime}$), centered on a mean hyperparameter ($\beta_1^{\prime}$).
 
-$$\beta_{1_i}=\beta_1^{\prime} + \beta_{1_i}^{\prime\prime}$$ 
+$$\beta_{1_i}=\beta_1^{\prime} + \beta_{1_i}^{\prime\prime}$$
 
 We estimated the spatially-varying component ($\beta_{1_i}^{\prime\prime}$) using the same intrinsic spatial conditional autoregressive (iCAR) neighbourhood matrix used to estimate the spatially varying population trends ([@smith2023]). This iCAR modelling structure estimates the stratum-level component for each covariate as a normally distributed variate, centered on the mean of the parameters in the surrounding strata, with an estimated among-strata variation. For example, the local component of the effect of SPEI on the annual relative abundance in stratum-i ($\beta_{1_i}^{\prime\prime}$) is a normal random variate centered on the mean of the effect in the set of n-strata that are direct neighbours of stratum-i ($n{\in{N_i}}$), and that has a standard deviation ($\sigma_{\beta_1^{\prime\prime}}$) estimated across the neighbourhood matrix for all strata.
 
 $$\beta_{1_i}^{\prime\prime}\sim Normal\left(\frac{\sum_{n{\in N}_i}\beta_{1_i}^{\prime\prime}}{N_i},\frac{\sigma_{\beta_{1_i}^{\prime\prime}}}{N_i}\right)$$
-
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
   ey <-2022
@@ -189,9 +188,7 @@ spei2
 
 ```
 
-
 ## Spatially varying effects of North Atlantic Oscillation Index
-
 
 {{< pagebreak >}}
 
@@ -221,4 +218,3 @@ nao2
 {{< pagebreak >}}
 
 # References Cited
-

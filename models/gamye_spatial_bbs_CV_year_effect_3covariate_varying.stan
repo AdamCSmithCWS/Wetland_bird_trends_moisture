@@ -36,6 +36,8 @@ data {
 
   // spatial annual covariate data
   matrix[n_strata,n_years] cov; // strata by year covariate matrix
+  // spatial annual covariate data
+  matrix[n_strata,n_years] cov_lag; // strata by year covariate matrix
   // annual covariate data
   matrix[1,n_years] cov_ann; //global annual covariate
 
@@ -187,7 +189,10 @@ beta_lag_cov = sd_beta_lag_cov*beta_lag_cov_raw + BETA_lag_cov;
 // remove yeareffect_raw and sdyear
 for(s in 1:n_strata){
     yeareffect[s,] = sdyear[s]*yeareffect_raw[s,] +
-    beta_lag_cov[s]*cov_lag[s,] + beta_cov[s]*cov[s,] + beta_ann_cov[s]*cov_ann[1,];
+    beta_lag_cov[s]*cov_lag[s,] +
+    beta_cov[s]*cov[s,] +
+    beta_ann_cov[s]*cov_ann[1,];
+
     yeareffect_random[s,] = sdyear[s]*yeareffect_raw[s,];
 }
 
@@ -246,7 +251,6 @@ model {
    sdstrata ~ student_t(3,0,1); //prior on sd of intercept variation
 
 // covariate effects
-  //beta_cov_raw ~ normal(0,1); //prior for non-centered covariate effect
   beta_lag_cov_raw ~ icar_normal(n_strata, node1, node2); // prior for spatially varying covariate
   BETA_lag_cov ~ normal(0,1); //prior for mean covariate effect
   sd_beta_lag_cov ~ normal(0,1); //prior on variance of covariate effect
