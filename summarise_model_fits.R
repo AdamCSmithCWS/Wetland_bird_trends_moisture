@@ -19,17 +19,20 @@ cov_nao_out <- NULL
 inds_out <- NULL
 
 
-for(model in c("gamye")){
+#for(model in c("gamye")){
+  model <- c("gamye")
 # load the fitted models --------------------------------------------------
-for(j in 3){#nrow(yr_pairs)){
+#for(j in 3){#nrow(yr_pairs)){
+  j <- 3
   ey <-yr_pairs[j,"ey"]
   sy <- yr_pairs[j,"sy"]
 
 if(!file.exists(paste0("output/",model,"_",sy,"_",ey,"_base.rds"))){next}
 
 fit <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_base.rds")) # read in the base model fit
-fit_cov <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying.rds")) # read in the covariate model fit
+fit_cov <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying_15.rds")) # read in the covariate model fit
 fit_cov_lag <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_3covariate_varying.rds")) # read in the covariate model fit
+fit_cov_core <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying_core.rds")) # read in the covariate model fit
 
 # summ <- readRDS(paste("summary",model,sy,ey,"2covariate_varying_lag.rds",
 #                       sep = "_"))
@@ -40,7 +43,7 @@ fit_cov_lag <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_3covariate_varying
 # # summ %>% filter(variable == "beta_cov")
 
 # trajectories trends and maps --------------------------------------------
-if(model == "gamye"){
+#if(model == "gamye"){
 
   inds_cov <- generate_indices(fit_cov,alternate_n = "n_smooth")
   inds_cov_out <- inds_cov$indices %>%
@@ -93,6 +96,36 @@ if(model == "gamye"){
 
   inds_out <- bind_rows(inds_out,inds_cov_lag_out)
 
+
+  # 2 covariate plus core range predictor -------------------------------------------------------------
+
+
+
+  inds_cov_core <- generate_indices(fit_cov_core,alternate_n = "n_smooth")
+  inds_cov_core_out <- inds_cov_core$indices %>%
+    mutate(model = "covariates_core",
+           base_model = model,
+           type = "smooth")
+
+  inds_covalt_core <- generate_indices(fit_cov_core,alternate_n = "n")
+  inds_cov_core_out2 <- inds_covalt_core$indices %>%
+    mutate(model = "covariates_core",
+           base_model = model,
+           type = "full")
+  inds_cov_core_out <- bind_rows(inds_cov_core_out,
+                                inds_cov_core_out2)
+  inds_cov_core_rand <- generate_indices(fit_cov_core,alternate_n = "n_random")
+  inds_cov_core_rand_out <- inds_cov_core_rand$indices %>%
+    mutate(model = "covariates_core",
+           base_model = model,
+           type = "no_covariates")
+  inds_cov_core_out <- bind_rows(inds_cov_core_out,
+                                inds_cov_core_rand_out)
+
+
+  inds_out <- bind_rows(inds_out,inds_cov_core_out)
+
+
 # base model --------------------------------------------------------------
 
 
@@ -116,31 +149,31 @@ if(model == "gamye"){
   inds_out <- bind_rows(inds_out,
                         inds_outf)
 
-}else{
-  inds_cov <- generate_indices(fit_cov,alternate_n = "n_random")
-  inds_cov_out <- inds_cov$indices %>%
-    mutate(model = "covariates",
-           base_model = model,
-           type = "no_covariate")
-
-  inds_covalt <- generate_indices(fit_cov,alternate_n = "n")
-  inds_cov_out2 <- inds_covalt$indices %>%
-    mutate(model = "covariates",
-           base_model = model,
-           type = "full")
-  inds_cov_out <- bind_rows(inds_cov_out,
-                            inds_cov_out2)
-  inds <- generate_indices(fit)#,alternate_n = "n_smooth")
-
-  inds_out <- inds$indices %>%
-    mutate(model = "base",
-           base_model = model,
-           type = "full")
-
-  inds_out <- bind_rows(inds_out,
-                        inds_cov_out)
-
-}
+# }else{
+#   inds_cov <- generate_indices(fit_cov,alternate_n = "n_random")
+#   inds_cov_out <- inds_cov$indices %>%
+#     mutate(model = "covariates",
+#            base_model = model,
+#            type = "no_covariate")
+#
+#   inds_covalt <- generate_indices(fit_cov,alternate_n = "n")
+#   inds_cov_out2 <- inds_covalt$indices %>%
+#     mutate(model = "covariates",
+#            base_model = model,
+#            type = "full")
+#   inds_cov_out <- bind_rows(inds_cov_out,
+#                             inds_cov_out2)
+#   inds <- generate_indices(fit)#,alternate_n = "n_smooth")
+#
+#   inds_out <- inds$indices %>%
+#     mutate(model = "base",
+#            base_model = model,
+#            type = "full")
+#
+#   inds_out <- bind_rows(inds_out,
+#                         inds_cov_out)
+#
+# }
 
 
 
@@ -161,7 +194,7 @@ traj_t <- ggplot(data = inds_plot_cont,
   scale_colour_viridis_d(aesthetics = c("fill","colour"))+
   facet_wrap(vars(model))
 
-if(model == "gamye"){
+#if(model == "gamye"){
   inds_plot_cont <- inds_out %>%
     filter(region == "continent",
            type == "smooth")
@@ -176,13 +209,13 @@ trajsmooth <- ggplot(data = inds_plot_cont,
   scale_colour_viridis_d(aesthetics = c("fill","colour"))
 
 traj_tfinal <- traj_t / trajsmooth
-}else{
-  traj_tfinal <- traj_t
-}
+#}else{
+#   traj_tfinal <- traj_t
+# }
 pdf(paste0("Figures/trajectories_",model,"_",sy,"_",ey,".pdf"),
     width = 11,
     height = 8.5)
-traj_tfinal
+print(traj_tfinal)
 dev.off()
 
 
@@ -264,7 +297,7 @@ trends_out <- bind_rows(trends_out,trendst)
 trends_3gen <- generate_trends(inds, min_year = ey-BLTE_3Gen,
                                prob_decrease = c(0,30,50))
 
-trendst <- trends$trends %>%
+trendst <- trends_3gen$trends %>%
   mutate(type = "three-generation",
          base_model = model,
          model = "base")
@@ -272,7 +305,89 @@ trends_out <- bind_rows(trends_out,trendst)
 
 
 
+
+
+
+
+
+
+
+
+
+
+trends_cov_core <- generate_trends(inds_cov_core, min_year = sy,
+                                  prob_decrease = c(0,30,50))
+
+trendt <- trends_cov_core$trends %>%
+  mutate(type = "long-term",
+         base_model = model,
+         model = "covariates_core")
+
+trends_out <- bind_rows(trends_out,trendt)
+
+trends_cov_core_3gen <- generate_trends(inds_cov_core, min_year = ey-BLTE_3Gen,
+                                       prob_decrease = c(0,30,50))
+trendt <- trends_cov_core_3gen$trends %>%
+  mutate(type = "three-generation",
+         base_model = model,
+         model = "covariates_core")
+
+trends_out <- bind_rows(trends_out,trendt)
+
+
+
 trends_save <- bind_rows(trends_save,trends_out)
+
+strata_incl <- readRDS("data/strata_w_core_indicator.rds") %>%
+  select(strata_name,periphery)
+
+trends_out <- trends_out %>%
+  full_join(.,strata_incl,
+            by = c("region" = "strata_name"))
+
+
+## plot continental trends for long-term and three generation
+##
+model_names <- data.frame(model = c("covariates_core",
+                                    "covariate",
+                                    "base"),
+                          Model = c("SPEI - NAOI - Core SPEI",
+                                    "SPEI - NAOI",
+                                    "Base"))
+trends_cont <- trends_out %>%
+  filter(region == "continent",
+         model != "covariates_lag") %>%
+  left_join(.,model_names,
+            by = "model") %>%
+  mutate(Time = type)
+
+trend_plot <- ggplot(data = trends_cont,
+                     aes(x = Model,y = trend,
+                         colour = Time,
+                         group = Time))+
+  geom_errorbar(aes(ymin = trend_q_0.05,
+                    ymax = trend_q_0.95),
+                alpha = 0.3,
+                width = 0,
+                position = position_dodge(width = 0.2))+
+  geom_point(position = position_dodge(width = 0.2))+
+  geom_hline(yintercept = 0)+
+  coord_flip()+
+  theme_bw()+
+  theme(legend.position = "bottom")
+
+pdf("figures/trends_by_model.pdf")
+print(trend_plot)
+dev.off()
+## consider calculating a core and periphery trend using alternate regions in strata_incl
+##
+##
+# Trend plot estimates ----------------------------------------------------
+
+
+
+
+
 
 # Trend maps --------------------------------------------------------------
 #
@@ -316,6 +431,18 @@ map_cov_lag_3gen <- plot_map(trends_cov_lag_3gen)+
            ylim = bbox[c("ymin","ymax")])
 
 
+
+
+map_cov_core_long <- plot_map(trends_cov_core) +
+  labs(subtitle = "Covariate w core long-term trends")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])
+map_cov_core_3gen <- plot_map(trends_cov_core_3gen)+
+  labs(subtitle = "Covariate w core three-generation trends")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])
+
+
 map_long <- plot_map(trends)+
   labs(subtitle = "Base long-term trends")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
@@ -327,7 +454,7 @@ map_3gen <- plot_map(trends_3gen)+
 
 
 
-all_maps <- map_long + map_cov_long + map_cov_lag_long + map_3gen + map_cov_3gen + map_cov_lag_3gen + plot_layout(ncol = 3,
+all_maps <- map_long + map_cov_long + map_cov_core_long + map_3gen + map_cov_3gen + map_cov_core_3gen + plot_layout(ncol = 3,
                                                                             nrow = 2,
                                                                             byrow = TRUE,
                                                                             guides = "collect")
@@ -345,7 +472,7 @@ dev.off()
 # mapping abundance -------------------------------------------------------
 
 
-abund_overall <- plot_map(trends_cov_lag_3gen,
+abund_overall <- plot_map(trends_cov_core_3gen,
                           alternate_column = "rel_abundance")
 
 abund_overall
@@ -371,7 +498,8 @@ spei_map <- ggplot()+
           fill = "white")+
   geom_sf(data = map_spei,
           aes(fill = mean))+
-  colorspace::scale_fill_continuous_diverging(rev = TRUE)+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of spring SPEI on annual abundance",model,"_",sy,"-",ey))+
@@ -399,7 +527,8 @@ nao_map <- ggplot()+
           fill = "white")+
   geom_sf(data = map_nao,
           aes(fill = mean))+
-  colorspace::scale_fill_continuous_diverging(rev = TRUE)+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of NAO on annual abundance",model,"_",sy,"-",ey))+
@@ -414,99 +543,331 @@ print(spei_map + nao_map)
 dev.off()
 
 
-# #SPEI lag maps ----------------------------------------------------------
+# #SPEI after core maps ----------------------------------------------------------
 
 
-cov_spei_after_lag <- get_summary(fit_cov_lag,variables = "beta_cov") %>%
+cov_spei_after_core <- get_summary(fit_cov_core,variables = "beta_cov") %>%
   mutate(strata = row_number(),
          model = "covariate",
          base_model = model,
-         predictor = "SPEI_after_lag")
+         predictor = "SPEI_after_core")
 
 cov_spei_out <- bind_rows(cov_spei_out,
-                          cov_spei_after_lag)
+                          cov_spei_after_core)
 
 
-map_spei_after_lag <- base_map %>%
-  inner_join(.,cov_spei_after_lag)
+map_spei_after_core <- base_map %>%
+  inner_join(.,cov_spei_after_core)
 
 
-spei_after_lag_map <- ggplot()+
+spei_after_core_map <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
-  geom_sf(data = map_spei_after_lag,
+  geom_sf(data = map_spei_after_core,
           aes(fill = mean))+
-  colorspace::scale_fill_continuous_diverging(rev = TRUE)+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
   labs(title = paste0("Effect of spring SPEI on annual abundance after SPEI lag",model,"_",sy,"-",ey))+
   theme_bw()
 
-print(spei_after_lag_map)
+print(spei_after_core_map)
 
 
 
 
-cov_spei_lag <- get_summary(fit_cov_lag,variables = "beta_lag_cov") %>%
+cov_nao_core <- get_summary(fit_cov_core,variables = "beta_ann_cov") %>%
   mutate(strata = row_number(),
-         model = "covariate",
+         model = "covariate after core",
          base_model = model,
-         predictor = "SPEI_lag")
-
-cov_spei_out <- bind_rows(cov_spei_out,
-                          cov_spei_lag)
+         predictor = "NAOI after core")
 
 
-map_spei_lag <- base_map %>%
-  inner_join(.,cov_spei_lag)
-
-
-spei_lag_map <- ggplot()+
-  geom_sf(data = strata_map,
-          fill = "white")+
-  geom_sf(data = map_spei_lag,
-          aes(fill = mean))+
-  colorspace::scale_fill_continuous_diverging(rev = TRUE)+
-  coord_sf(xlim = bbox[c("xmin","xmax")],
-           ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Effect of lagged spring SPEI on annual abundance ",model,"_",sy,"-",ey))+
-  theme_bw()
-
-print(spei_lag_map)
-
-
-
-cov_nao <- get_summary(fit_cov_lag,variables = "beta_ann_cov") %>%
-  mutate(strata = row_number(),
-         model = "covariate",
+cov_BETA_nao <- get_summary(fit_cov_core,variables = "BETA_ann_cov") %>%
+  mutate(model = "covariate after core",
          base_model = model,
-         predictor = "NAOI after lag SPEI")
+         predictor = "NAOI after core")
+
+
+cov_BETA_core <- get_summary(fit_cov_core,variables = "BETA_cor_cov") %>%
+  mutate(model = "covariate after core",
+         base_model = model,
+         predictor = "core moisture")
+
+
+paste("difference between wet year and dry year in core creates a",
+      round(100*(exp(cov_BETA_core$mean*2)-1)),"% difference in abundance in the periphery")
+
+
 
 cov_nao_out <- bind_rows(cov_nao_out,
-                         cov_nao)
+                         cov_nao_core)
 
-map_nao <- base_map %>%
-  inner_join(.,cov_nao,
+map_nao_core <- base_map %>%
+  inner_join(.,cov_nao_core,
              by = "strata")
 
 
-nao_map <- ggplot()+
+nao_map_core <- ggplot()+
   geom_sf(data = strata_map,
           fill = "white")+
-  geom_sf(data = map_nao,
+  geom_sf(data = map_nao_core,
           aes(fill = mean))+
-  colorspace::scale_fill_continuous_diverging(rev = TRUE)+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
   coord_sf(xlim = bbox[c("xmin","xmax")],
            ylim = bbox[c("ymin","ymax")])+
-  labs(title = paste0("Effect of NAO on annual abundance",model,"_",sy,"-",ey))+
+  labs(title = paste0("Effect of NAO after core",model,"_",sy,"-",ey))+
   theme_bw()
 
-print(nao_map)
+print(nao_map_core)
 
-pdf(paste0("Figures/Spatial variation in covariate effects w lag",model,"_",sy,"-",ey,".pdf"),
+
+#
+# cov_spei_lag <- get_summary(fit_cov_lag,variables = "beta_lag_cov") %>%
+#   mutate(strata = row_number(),
+#          model = "covariate",
+#          base_model = model,
+#          predictor = "SPEI_lag")
+#
+# cov_spei_out <- bind_rows(cov_spei_out,
+#                           cov_spei_lag)
+#
+#
+# map_spei_lag <- base_map %>%
+#   inner_join(.,cov_spei_lag)
+#
+#
+# spei_lag_map <- ggplot()+
+#   geom_sf(data = strata_map,
+#           fill = "white")+
+#   geom_sf(data = map_spei_lag,
+#           aes(fill = mean))+
+#   colorspace::scale_fill_continuous_diverging(rev = TRUE,
+#                                               palette = "Blue-Red 3")+
+#   coord_sf(xlim = bbox[c("xmin","xmax")],
+#            ylim = bbox[c("ymin","ymax")])+
+#   labs(title = paste0("Effect of lagged spring SPEI on annual abundance ",model,"_",sy,"-",ey))+
+#   theme_bw()
+#
+# print(spei_lag_map)
+#
+
+
+
+# overall spei map --------------------------------------------------------
+
+spei_names <- data.frame(predictor = c("SPEI","SPEI_after_core"),
+                         Predictor = c("SPEI 15 Months",
+                                       "SPEI 15 Months after core"))
+
+map_spei_all <- base_map %>%
+  inner_join(.,cov_spei_out,
+             by = "strata") %>%
+  inner_join(.,spei_names,
+             by = "predictor")
+
+
+spei_all_map <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_spei_all,
+          aes(fill = mean))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_spei_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Effect of SPEI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+
+
+spei_all_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_spei_all,
+          aes(fill = q5))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_spei_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Lower CL Effect of SPEI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+core = bbsBayes2::load_map("bcr") %>%
+  filter(strata_name == "BCR11")
+
+
+spei_all_map_q95 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_spei_all,
+          aes(fill = q95))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_spei_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Upper CL Effect of SPEI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+
+pdf(paste0("Figures/Spatial variation in SPEI effects by two models ",model,"_",sy,"-",ey,".pdf"),
+height = 11,
+width = 8.5)
+
+print(spei_all_map)
+print(spei_all_map_q5/ spei_all_map_q95)
+dev.off()
+
+
+
+
+# overall NAO map ---------------------------------------------------------
+
+
+nao_names <- data.frame(predictor = c("NAOI","NAOI after core"),
+                         Predictor = c("NAOI previous winter",
+                                       "NAOI previous winter after core"))
+
+map_nao_all <- base_map %>%
+  inner_join(.,cov_nao_out,
+             by = "strata") %>%
+  inner_join(.,nao_names,
+             by = "predictor")
+
+
+nao_all_map <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_nao_all,
+          aes(fill = mean))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_nao_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Effect of NAOI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+
+nao_all_map_q5 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_nao_all,
+          aes(fill = q5))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_nao_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Lower CL of NAOI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+
+
+nao_all_map_q95 <- ggplot()+
+  geom_sf(data = strata_map,
+          fill = "white",
+          colour = grey(0.7))+
+  geom_sf(data = map_nao_all,
+          aes(fill = q95))+
+  geom_sf(data = core,
+          fill = NA,
+          colour = "black")+
+  # geom_sf(data = map_nao_all,
+  #         aes(fill = q5))+
+  colorspace::scale_fill_continuous_diverging(rev = TRUE,
+                                              palette = "Blue-Red 3")+
+  coord_sf(xlim = bbox[c("xmin","xmax")],
+           ylim = bbox[c("ymin","ymax")])+
+  labs(title = paste0("Upper CL of NAOI on annual abundance ",model,"_",sy,"-",ey))+
+  theme_bw()+
+  facet_grid(rows = vars(Predictor))
+
+
+pdf(paste0("Figures/Spatial variation in NAOI effects by two models ",model,"_",sy,"-",ey,".pdf"),
     height = 11,
     width = 8.5)
-print(spei_after_lag_map / spei_lag_map / nao_map)
+
+
+print(nao_all_map)
+print(nao_all_map_q5 / nao_all_map_q95)
+dev.off()
+
+
+
+
+
+
+
+
+# cov_nao <- get_summary(fit_cov_core,variables = "beta_ann_cov") %>%
+#   mutate(strata = row_number(),
+#          model = "covariate",
+#          base_model = model,
+#          predictor = "NAOI after core")
+#
+# cov_nao_out <- bind_rows(cov_nao_out,
+#                          cov_nao)
+#
+# map_nao <- base_map %>%
+#   inner_join(.,cov_nao,
+#              by = "strata")
+#
+#
+# nao_map <- ggplot()+
+#   geom_sf(data = strata_map,
+#           fill = "white")+
+#   geom_sf(data = map_nao,
+#           aes(fill = mean))+
+#   colorspace::scale_fill_continuous_diverging(rev = TRUE,
+#                                               palette = "Blue-Red 3")+
+#   coord_sf(xlim = bbox[c("xmin","xmax")],
+#            ylim = bbox[c("ymin","ymax")])+
+#   labs(title = paste0("Effect of NAO on annual abundance",model,"_",sy,"-",ey))+
+#   theme_bw()
+#
+# print(nao_map)
+
+print_map <- spei_all_map + nao_all_map
+pdf(paste0("Figures/Spatial variation in covariate effects w core",model,"_",sy,"-",ey,".pdf"),
+    height = 11,
+    width = 8.5)
+print(print_map)
 dev.off()
 
 
@@ -520,7 +881,7 @@ dev.off()
 #centroids
 cent_base_map <- base_map %>%
   sf::st_centroid() %>%
-  sf::st_set_crs(st_crs(base_map))
+  sf::st_set_crs(sf::st_crs(base_map))
 
 centroids <- cent_base_map%>%
   sf::st_coordinates()
@@ -607,6 +968,7 @@ covariates_all <- cov_incl %>%
   inner_join(.,nao,
              by = c("year"))
 
+# pairs(covariates_all[,c("spei","spei_lag","nao")])
 
 population_centers <- population_centers %>%
   left_join(.,covariates_all,

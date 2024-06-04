@@ -1,7 +1,7 @@
 ### running bbsBayes spatial GAMYE model
 
 
-setwd("C:/Users/SmithAC/Documents/GitHub/Wetland_bird_trends_moisture")
+#setwd("C:/Users/SmithAC/Documents/GitHub/Wetland_bird_trends_moisture")
 #setwd("C:/GitHub/Wetland_bird_trends_moisture")
 library(bbsBayes2)
 library(tidyverse)
@@ -55,9 +55,11 @@ saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
 
 }
 
-run_base <- TRUE
-for(j in nrow(yr_pairs)){
-  ey <-yr_pairs[j,"ey"]
+run_base <- FALSE
+#for(j in nrow(yr_pairs)){
+j <- 3
+
+ ey <-yr_pairs[j,"ey"]
   sy <- yr_pairs[j,"sy"]
 
   ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
@@ -139,7 +141,9 @@ lag_time_spei <- 1 # number of years for moisture covariate lag
 
  cov_mod <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varying.stan")
 
- cov_all <- readRDS("data/annual_latlong_june_spei03.rds")
+ n_months <- 15
+
+ cov_all <- readRDS(paste0("data/annual_latlong_june_spei",n_months,".rds"))
 
 strata_incl <- ps$meta_strata
 years_incl <- min(ps$raw_data$year) : max(ps$raw_data$year)
@@ -177,6 +181,55 @@ cov_ann <- matrix(as.numeric(nao$winter),
                   nrow = 1)
 
 
+## mean moisture in strata within core of species' range
+
+# ID BCR 11 strata
+#
+
+bcrs <- bbsBayes2::load_map("bcr") %>%
+  rename(bcr = strata_name)
+
+core_strata <- strata_map %>%
+  sf::st_join(.,bcrs,
+              largest = TRUE,
+              join = sf::st_covered_by) %>%
+  filter(bcr == "BCR11")
+
+
+core_strata_incl <- strata_incl %>%
+  filter(strata_name %in% core_strata$strata_name)
+
+periphery_incl <- strata_incl %>%
+  filter(!strata_name %in% core_strata$strata_name)
+
+strata_incl <- strata_incl %>%
+  mutate(periphery = ifelse(strata_name %in% core_strata$strata_name,
+                            0,
+                            1))
+
+
+saveRDS(strata_incl,"data/strata_w_core_indicator.rds")
+
+# tst <- ggplot()+
+#   geom_sf(data = core_strata)+
+#   geom_sf(data = bcrs,
+#           fill = NA)
+#
+# tst
+
+periphery <- as.integer(strata_incl$periphery)
+core = which(periphery == 0)
+mean_cov_core <- colMeans(cov_incl[core,])
+cov_core <- matrix(as.numeric(mean_cov_core),
+                  nrow = 1)
+
+
+
+
+
+
+# Fit first covariate model -----------------------------------------------
+
 
 pm_cov <- prepare_model(ps,
                         model = model,
@@ -194,10 +247,10 @@ fit_cov <- run_model(pm_cov,
                  max_treedepth = 11,
                  adapt_delta = 0.8,
                  output_dir = "output",
-                 output_basename = paste0(model,"_",sy,"_",ey,"_2covariate_varying"))
+                 output_basename = paste0(model,"_",sy,"_",ey,"_2covariate_varying_15"))
 
 summ <- get_summary(fit_cov)
-saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying.rds"))
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_15.rds"))
 
 
 
@@ -238,7 +291,44 @@ summ <- get_summary(fit_cov2)
 saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_3covariate_varying.rds"))
 
 
-}#3nd of time-series loops
+
+
+
+
+
+# Fit core moisture effect model ------------------------------------------
+
+
+cov_mod3 <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varying_core.stan")
+
+
+pm_cov3 <- prepare_model(ps,
+                         model = model,
+                         model_variant = model_variant,
+                         model_file = cov_mod3)
+
+pm_cov3$model_data[["cov"]] <- cov_incl
+pm_cov3$model_data[["cov_ann"]] <- cov_ann
+
+pm_cov3$model_data[["cov_core"]] <- cov_core
+pm_cov3$model_data[["periphery"]] <- periphery
+
+
+
+fit_cov3 <- run_model(pm_cov3,
+                      refresh = 200,
+                      iter_warmup = 2000,
+                      iter_sampling = 4000,
+                      thin = 2,
+                      max_treedepth = 11,
+                      adapt_delta = 0.8,
+                      output_dir = "output",
+                      output_basename = paste0(model,"_",sy,"_",ey,"_2covariate_varying_core"))
+
+summ <- get_summary(fit_cov3)
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_core.rds"))
+
+#}#3nd of time-series loops
 
 
 
