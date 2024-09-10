@@ -3,12 +3,10 @@ setwd("C:/GitHub/Wetland_bird_trends_moisture")
 library(bbsBayes2)
 library(tidyverse)
 library(patchwork)
-
+library(cmdstanr)
+library(loo)
 BLTE_gen = 5.682 # generation time for Black Tern - Bird et al. 2020
 BLTE_3Gen = round(BLTE_gen*3) # Three generations to calculate COSEWIC and IUCN trend thresholds
-yr_pairs <- data.frame(sy = c(1970,1995,1970),
-                       ey = c(1995,2022,2022))
-
 
 #strata_sel <- readRDS("output/custom_latlong_bcr_stratification.rds")
 inds_save <- NULL
@@ -23,16 +21,59 @@ inds_out <- NULL
   model <- c("gamye")
 # load the fitted models --------------------------------------------------
 #for(j in 3){#nrow(yr_pairs)){
-  j <- 3
-  ey <-yr_pairs[j,"ey"]
-  sy <- yr_pairs[j,"sy"]
 
-if(!file.exists(paste0("output/",model,"_",sy,"_",ey,"_base.rds"))){next}
+  ey <-2022
+  sy <- 1970
 
-fit <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_base.rds")) # read in the base model fit
+
+fit_base <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_base.rds")) # read in the base model fit
 fit_cov <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying_15.rds")) # read in the covariate model fit
 fit_cov_lag <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_3covariate_varying.rds")) # read in the covariate model fit
 fit_cov_core <- readRDS(paste0("output/",model,"_",sy,"_",ey,"_2covariate_varying_core.rds")) # read in the covariate model fit
+
+
+summ_base <- readRDS(paste0("summary_",model,"_",sy,"_",ey,"_base.rds")) %>%
+  mutate(model = "base")
+summ_cov <- readRDS(paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_15.rds")) %>%
+  mutate(model = "weather")
+summ_cov_lag <- readRDS(paste0("summary_",model,"_",sy,"_",ey,"_3covariate_varying.rds")) %>%
+  mutate(model = "weather-lag")
+summ_cov_core <- readRDS(paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_core.rds")) %>%
+  mutate(model = "weather-plus-core")
+
+summ_all <- bind_rows(summ_base,
+                      summ_cov,
+                      summ_cov_lag,
+                      summ_cov_core)
+
+max(summ_all$rhat, na.rm = TRUE)
+
+check_conv <- summ_all %>%
+  filter(rhat > 1.01,
+         ess_bulk < 400)
+
+
+loo_base <- fit_base$model_fit$loo()
+loo_cov <- fit_cov$model_fit$loo()
+loo_cov_lag <- fit_cov_lag$model_fit$loo()
+loo_cov_core <- fit_cov_core$model_fit$loo()
+
+
+loo_compare(loo_base,loo_cov,loo_cov_lag,loo_cov_core)
+loo_compare(loo_cov,loo_cov_lag,loo_cov_core)
+
+pointwise <- fit_base$raw_data
+pointwise[,"elppd_base"] <- loo_base$pointwise[,"elpd_loo"]
+pointwise[,"elppd_weather"] <- loo_cov$pointwise[,"elpd_loo"]
+pointwise[,"elppd_weather_lag"] <- loo_cov_lag$pointwise[,"elpd_loo"]
+pointwise[,"elppd_weather_plus_core"] <- loo_cov_core$pointwise[,"elpd_loo"]
+
+pointwise <- pointwise %>%
+  mutate(dif_weather_plus_core_base = elppd_weather_plus_core-elppd_base,
+         dif_weather_plus_core_weather = elppd_weather_plus_core-elppd_weather,
+         dif_weather_base = elppd_weather-elppd_base,
+         dif_weather_plus_core_weather_lag = elppd_weather_plus_core-elppd_weather_lag,
+         dif_weather_weather_lag = elppd_weather-elppd_weather_lag)
 
 # summ <- readRDS(paste("summary",model,sy,ey,"2covariate_varying_lag.rds",
 #                       sep = "_"))

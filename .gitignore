@@ -4,3 +4,6 @@
 .Ruserdata
 /output
 */too_large
+**/arch
+/figures
+*.rds

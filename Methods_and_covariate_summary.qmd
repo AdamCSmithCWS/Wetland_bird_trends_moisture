@@ -1,8 +1,6 @@
 ---
 title: "Methods and Results"
-format: 
-  pdf:
-    fig-pos: 't'
+format: docx
 editor: visual
 bibliography: references.bib
 ---
@@ -13,38 +11,55 @@ library(bbsBayes2)
 library(patchwork)
 ```
 
-## Annual weather effects on Black Tern abundance and trends
+## Methods
 
-We designed a model to estimate the effects of annual weather patterns on abundance of Black Terns on BBS surveys, while accounting for medium- and long-term population trends. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
+We designed the model to estimate the effects of annual weather patterns on abundance of Black Terns on BBS surveys, while accounting for medium- and long-term population trends that were not associated with these weather patterns. We used two annual weather covariates: one that represented the local spring moisture using the 3-month (April - June) Standardized Precipitation Evapotranspiration Index (SPEI [@beguería]); and, a second that represented the North Atlantic Oscillation Index (NAOI, [@hurrell1995], accessed through <https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/nao.shtml>) from the previous winter (January - June, on a 1-year lag, 18 - 12 months before the BBS surveys were conducted; following [@davis2023]).
 
-The model was based on the GAMYE models described in [@smith2020] and [@smith2023]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). In this particular version, we used a spatially explicit, hierarchical model structure to share information on the non-linear smooth component among strata. This spatial model allowed us to fit the model using a relatively fine-grained spatial stratification basend on 1-degree longitude by 1-degree latitude grid ([@smith2023]). The spatially explicit aspects ensure that the medium- and long-term trends can vary among strata, but that trends in nearby strata are more similar than trends in strata further away. The model also included all of the parameters regularly included in models for the BBS data to account for variation among observers, among routes, and first-year observer start-up effects.
+We fit three models: a base model that did not include weather data; a weather model that included the effects of SPEI and NAO on the annual abundance; and a weather-plus-core model that also included the annual SPEI in the core of the species' range as a predictor on the annual abundance outside of the core.
 
-We added a sub-model to estimate the year-effects using two predictors, so that the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in year t-1 ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}$).
+#### Base model
+
+The base model was the spatially explicit GAMYE models described in [@smith2024]. In the GAMYE model, the population trajectory (pattern of annual abundance through time) is modeled as an additive combination of a non-linear smooth (i.e., the GAM component) and year-effects that model the annual fluctuations around the smooth (the YE component). In this particular version, we used a spatially explicit, hierarchical model structure to share information on the non-linear smooth component among strata. This spatial model allowed us to fit the model using a relatively fine-grained spatial stratification based on 1-degree longitude by 1-degree latitude grid ([@smith2024]). The spatially explicit aspects ensure that the medium- and long-term trends can vary among strata, but that trends in nearby strata are more similar than trends in strata further away. The model also included all of the parameters regularly included in models for the BBS data to account for variation among observers, among routes, and first-year observer start-up effects ([@edwards2023][@smith2024]).
+
+$$ C_{i,t,r,j}=Negative\ Binomial\left(\lambda_{i,t,r,j},\phi\right) $$
+
+$$ log\left(\lambda_{i,t,r,j}\right)=\alpha_i+\delta_{i,t}+\gamma_{i,t}+\eta Ι_{j,t}+\omega_j $$
+
+In the base model, we modeled the observed counts ($C_{r,j,t}$) of Black Terns on route-r, in stratum-i and year-t, by observer-j as as realizations of a negative binomial distribution, with mean $\lambda_{i,t,r,j}$ and inverse dispersion parameter $\phi$. The log of the mean ($\lambda_{i,t,r,j}$) of the negative binomial distribution was modeled as an additive combination of stratum-level intercepts ($\alpha_i$), the year-specific location along the stratum-level non-linear smooth ($\delta_{i,t}$), year-effects ($\gamma_{i,t}$), observer-effects ($\omega_j$), and a first-year observer-effect ($\eta I_{j,t}$). The year-effects ($\gamma_{i,t}$) in this model are random-effects that track annual fluctuations as departures from the medium- and long-term changes modeled by the smooths ($\delta_{i,t}$). In this base model, they are estimated for each stratum-i and year-t as a random variate drawn from a normal distribution centered on 0, and with an estimated standard deviation ($\gamma_{i,t} \sim Normal(0,\sigma_{\gamma_i})$).
+
+#### Weather model
+
+We built the weather model by starting with the base model and adding a sub-model to estimate the year-effects using two weather-based predictors. With these predictors, the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI in that year and stratum ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in the previous year ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}  \sim Normal(0,\sigma_{\gamma_i})$).
 
 $$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\varepsilon_{i,t}$$
 
-Each of the stratum-specific parameters for the effects of SPEI ($\beta_{1_i}$) and NAOI ($\beta_{2_i}$), were estimated as a combination of spatially-varying random effects ($\beta_{1_i}^{\prime\prime}$), centered on a mean hyperparameter ($\beta_1^{\prime}$).
+The effects of both SPEI and NAOI were allowed to vary among strata, as spatially varying coefficients ([@thorson2023]). Each of the stratum-specific parameters for the effects of SPEI ($\beta_{1_i}$) and NAOI ($\beta_{2_i}$), were estimated as a combination of spatially-varying effects ($\beta_{1_i}^{\prime\prime}$), estimated with a zero-sum constraint and a hyperparameter ($\beta_1^{\prime}$) that represents the mean effect of each covariate across all strata.
 
 $$\beta_{1_i}=\beta_1^{\prime} + \beta_{1_i}^{\prime\prime}$$
 
-We estimated the spatially-varying component ($\beta_{1_i}^{\prime\prime}$) using the same intrinsic spatial conditional autoregressive (iCAR) neighbourhood matrix used to estimate the spatially varying population trends ([@smith2023]). This iCAR modelling structure estimates the stratum-level component for each covariate as a normally distributed variate, centered on the mean of the parameters in the surrounding strata, with an estimated among-strata variation. For example, the local component of the effect of SPEI on the annual relative abundance in stratum-i ($\beta_{1_i}^{\prime\prime}$) is a normal random variate centered on the mean of the effect in the set of n-strata that are direct neighbours of stratum-i ($n{\in{N_i}}$), and that has a standard deviation ($\sigma_{\beta_1^{\prime\prime}}$) estimated across the neighbourhood matrix for all strata.
+We estimated the spatially-varying component ($\beta_{1_i}^{\prime\prime}$) using the same intrinsic spatial conditional autoregressive (iCAR) neighbourhood matrix used to estimate the spatially varying smooths ([@smith2024]). This iCAR modelling structure estimates the stratum-level component for each covariate as a normally distributed variate, centered on the mean of the parameters in the surrounding strata, with an estimated among-strata standard deviation $\sigma_{\beta_1^{\prime\prime}}$ or $\sigma_{\beta_2^{\prime\prime}}$. So, the local component of the effect of SPEI on the annual relative abundance in stratum-i ($\beta_{1_i}^{\prime\prime}$) is a normal variate centered on the mean of the effect in the set $N_i$ of the $n_i$-strata that are direct neighbours of stratum-i. These spatially varying effects are estimated using a soft, sum-to-zero constraint ([@morris2019]) to ensure they are centered on the hyperparameter $\beta_1^{\prime}$, representing the mean effect across all strata.
 
-$$\beta_{1_i}^{\prime\prime}\sim Normal\left(\frac{\sum_{n{\in N}_i}\beta_{1_i}^{\prime\prime}}{N_i},\frac{\sigma_{\beta_{1_i}^{\prime\prime}}}{N_i}\right)$$
+$$\beta_{1_i}^{\prime\prime}\sim Normal\left(\frac{\sum_{n \in N_i}\beta_{1_n}^{\prime\prime}}{n_i},\frac{\sigma_{\beta_{1}^{\prime\prime}}}{n_i}\right)$$
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-  ey <-2022
-  sy <- 1966
+#### Weather plus core model
 
-fit_cov <- readRDS(paste0("output/",sy,"_",ey,"_2covariate_varying.rds")) # read in the covariate model fit
+This model started with the weather model plus an effect of annual moisture in the core of the species' range ($SPEICORE_t$) on the annual abundance in strata outside of the core. We defined the core of the species range as strata that fall completely within the Prairie Potholes Bird Conservation Region (BCR 11, Figure 2). So, this effect of moisture in the core ($\beta_3$) only contributes to estimating the annual abundance in strata outside of the core, has a constant effect across all strata where it is relevant (i.e., it is not spatially varying), and has no effect on estimates within the core range. The term $P_i$ is an indicator variable that takes the value 0 for all strata inside the core of the species range and 1 for all strata outside of the core.
 
-cov_hypers <- get_summary(fit_cov,variables = c("BETA_cov","BETA_ann_cov")) %>%
-  mutate(effect = ifelse(variable == "BETA_cov","Spring SPEI","NAO_lag1"))
-B1 <- cov_hypers %>% 
-  filter(effect == "Spring SPEI")
-B2 <- cov_hypers %>% 
-  filter(effect == "NAO_lag1")
+$$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\beta_3P_i{SPEICORE}_{t}+\varepsilon_{i,t}$$
 
-```
+We calculated the $SPEICORE_t$ values by averaging the $SPEI_{i,t}$ across all core strata for that year.
+
+### Trends
+
+In all models, the trends represent changes in Black Tern populations that are occurring on medium- to long-term time scales and not the result of annual variations. We estimated trends using only the smooth component of the model, after removing the effects of the annual fluctuations, as suggested in [@smith2024] and [@smith2021]. As a result, trends from the weather and weather plus core models represent changes in populations after removing the effects of variation in these annual factors.
+
+### Model Fit
+
+## Results
+
+Black Tern population trends over the entire survey area and for the long-term (1970-2022) are negative from all three models (Figure R1). Over the last three generations (2005-2022) survey-wide trends from the base model suggest a stable population, but removing the effects of the climatic variables in the weather and weather plus core models suggests that recent population trends may be positive overall (Figure R1).
+
+The spatial patterns in trends are generally similar among the three models (Figure R2). In the periphery of the range, long-term trends are almost all negative and recent trends are strongly negative. Within the core of the species' range, the long-term trends are generally negative except for one region in the southern part of the core range. Recent trends in the core range vary in space, with pockets of strong decreases along the western edge of the core, in much of Saskatchewan and Manitoba, and Minnesota and Iowa, contrasting with regions with relatively strong increases in Alberta and North and South Dakota (Figure R2).
 
 ## Spatially varying effects of Spring Moisture
 

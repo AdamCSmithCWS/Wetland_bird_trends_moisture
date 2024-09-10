@@ -34,10 +34,6 @@ data {
 
   int<lower=1> n_observers;// number of observers
 
-  // covariate data
-  matrix[n_strata,n_years] cov; // strata by year covariate matrix
-
-
   // array data to estimate annual indices using only observer-site combinations that are in each stratum
   array[n_strata] int<lower=0> n_obs_sites_strata; // number of observer-site combinations in each stratum
   int<lower=0> max_n_obs_sites_strata; //largest value of n_obs_sites_strata
@@ -126,9 +122,6 @@ parameters {
   vector[n_knots_year] BETA_raw;//_raw;
   matrix[n_strata,n_knots_year] beta_raw;         // GAM strata level parameters
 
-// covariate
-  real beta_cov; //coefficient of covariate effect on annual fluctuations
-
 }
 
 transformed parameters {
@@ -163,12 +156,9 @@ transformed parameters {
      smooth_pred[,s] = year_basis * transpose(beta[s,]);
 }
 
-// yeareffects as an additive combination of a random fluctuation
-// and the effect of the annual moisture covariate
-// may not be sufficient data to estimate both, in which case
-// remove yeareffect_raw and sdyear
 for(s in 1:n_strata){
-    yeareffect[s,] = sdyear[s]*yeareffect_raw[s,] + beta_cov*cov[s,];
+    yeareffect[s,] = sdyear[s]*yeareffect_raw[s,];
+
 }
 
 // intercepts and slopes
@@ -224,9 +214,6 @@ model {
   sdbeta ~ std_normal(); // prior on sd of GAM parameters
   // sdbeta ~ student_t(3,0,1); // alternative prior on sd of GAM parameters
    sdstrata ~ student_t(3,0,1); //prior on sd of intercept variation
-
-// covariate effect
-  beta_cov ~ normal(0,1); //prior for covariate effect
 
 
   obs_raw ~ std_normal(); // ~ student_t(3,0,1);//observer effects

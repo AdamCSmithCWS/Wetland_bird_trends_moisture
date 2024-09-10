@@ -31,43 +31,123 @@ model_variant <- "spatial"
 
 s <- stratify(by = "latlong",
               species = species)
-yr_pairs <- data.frame(sy = c(1970,1995,1970),
-                       ey = c(1995,2022,2022))
+ey <-2022
+sy <-1970
+#
+# p <- prepare_data(s,
+#                   min_n_routes = 1,
+#                   min_max_route_years = 6,
+#                   max_year = ey,
+#                   min_year = sy)
+#
+# ps <- prepare_spatial(p,
+#                       strata_map = strata_map)
+#
+# print(ps$spatial_data$map)
+# saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
+#
 
 
-#base data prep
-for(j in nrow(yr_pairs)){
-ey <-yr_pairs[j,"ey"]
-sy <- yr_pairs[j,"sy"]
-
-p <- prepare_data(s,
-                  min_n_routes = 1,
-                  min_max_route_years = 6,
-                  max_year = ey,
-                  min_year = sy)
-
-ps <- prepare_spatial(p,
-                      strata_map = strata_map)
-
-print(ps$spatial_data$map)
-saveRDS(ps,paste0("data/prepared_data_",sy,"-",ey,".rds"))
-
-
-}
-
-run_base <- FALSE
-#for(j in nrow(yr_pairs)){
-j <- 3
-
- ey <-yr_pairs[j,"ey"]
-  sy <- yr_pairs[j,"sy"]
+run_base <- TRUE
 
   ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
+
+
+
+  lag_time_spei <- 1 # number of years for moisture covariate lag
+
+
+
+  n_months <- 15
+
+  cov_all <- readRDS(paste0("data/annual_latlong_june_spei",n_months,".rds"))
+
+  strata_incl <- ps$meta_strata
+  years_incl <- min(ps$raw_data$year) : max(ps$raw_data$year)
+  years_incl_lag <- c(min(ps$raw_data$year) : max(ps$raw_data$year))-lag_time_spei
+
+  cov_incl <-  strata_incl %>%
+    inner_join(.,cov_all,
+               by = "strata_name") %>%
+    select(matches(as.character(years_incl)),
+           strata) %>%
+    arrange(strata) %>%
+    select(-strata) %>%
+    as.matrix()
+
+
+  cov_lag_incl <-  strata_incl %>%
+    inner_join(.,cov_all,
+               by = "strata_name") %>%
+    select(matches(as.character(years_incl_lag)),
+           strata) %>%
+    arrange(strata) %>%
+    select(-strata) %>%
+    as.matrix()
+
+  ## global annual covariate
+  lag_nao <- 1 #1-year lag for NAO data
+  nao <- readRDS("data/nao.rds")
+  nao <- nao %>%
+    rowwise() %>%
+    mutate(.,winter = mean(c(January:May))) %>%
+    filter(year %in% c(years_incl-lag_nao)) %>%
+    arrange(year)
+
+  cov_ann <- matrix(as.numeric(nao$winter),
+                    nrow = 1)
+
+
+  ## mean moisture in strata within core of species' range
+
+  # ID BCR 11 strata
+  #
+
+  bcrs <- bbsBayes2::load_map("bcr") %>%
+    rename(bcr = strata_name)
+
+  core_strata <- strata_map %>%
+    sf::st_join(.,bcrs,
+                largest = TRUE,
+                join = sf::st_covered_by) %>%
+    filter(bcr == "BCR11")
+
+
+  core_strata_incl <- strata_incl %>%
+    filter(strata_name %in% core_strata$strata_name)
+
+  periphery_incl <- strata_incl %>%
+    filter(!strata_name %in% core_strata$strata_name)
+
+  strata_incl <- strata_incl %>%
+    mutate(periphery = ifelse(strata_name %in% core_strata$strata_name,
+                              0,
+                              1))
+
+
+  saveRDS(strata_incl,"data/strata_w_core_indicator.rds")
+
+  # tst <- ggplot()+
+  #   geom_sf(data = core_strata)+
+  #   geom_sf(data = bcrs,
+  #           fill = NA)
+  #
+  # tst
+
+  periphery <- as.integer(strata_incl$periphery)
+  core = which(periphery == 0)
+  mean_cov_core <- colMeans(cov_incl[core,])
+  cov_core <- matrix(as.numeric(mean_cov_core),
+                     nrow = 1)
+
+
+
 
 if(run_base){
 pm <- prepare_model(ps,
                     model = model,
-                    model_variant = model_variant)
+                    model_variant = model_variant,
+                    calculate_log_lik = TRUE)
 
 
 fit <- run_model(pm,
@@ -136,105 +216,19 @@ saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_base.rds"))
 # }
 
 
-lag_time_spei <- 1 # number of years for moisture covariate lag
-
-
- cov_mod <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varying.stan")
-
- n_months <- 15
-
- cov_all <- readRDS(paste0("data/annual_latlong_june_spei",n_months,".rds"))
-
-strata_incl <- ps$meta_strata
-years_incl <- min(ps$raw_data$year) : max(ps$raw_data$year)
-years_incl_lag <- c(min(ps$raw_data$year) : max(ps$raw_data$year))-lag_time_spei
-
-cov_incl <-  strata_incl %>%
-  inner_join(.,cov_all,
-             by = "strata_name") %>%
-  select(matches(as.character(years_incl)),
-         strata) %>%
-  arrange(strata) %>%
-  select(-strata) %>%
-  as.matrix()
-
-
-cov_lag_incl <-  strata_incl %>%
-  inner_join(.,cov_all,
-             by = "strata_name") %>%
-  select(matches(as.character(years_incl_lag)),
-         strata) %>%
-  arrange(strata) %>%
-  select(-strata) %>%
-  as.matrix()
-
-## global annual covariate
-lag_nao <- 1 #1-year lag for NAO data
-nao <- readRDS("data/nao.rds")
-nao <- nao %>%
-  rowwise() %>%
-  mutate(.,winter = mean(c(January:May))) %>%
-  filter(year %in% c(years_incl-lag_nao)) %>%
-  arrange(year)
-
-cov_ann <- matrix(as.numeric(nao$winter),
-                  nrow = 1)
-
-
-## mean moisture in strata within core of species' range
-
-# ID BCR 11 strata
-#
-
-bcrs <- bbsBayes2::load_map("bcr") %>%
-  rename(bcr = strata_name)
-
-core_strata <- strata_map %>%
-  sf::st_join(.,bcrs,
-              largest = TRUE,
-              join = sf::st_covered_by) %>%
-  filter(bcr == "BCR11")
-
-
-core_strata_incl <- strata_incl %>%
-  filter(strata_name %in% core_strata$strata_name)
-
-periphery_incl <- strata_incl %>%
-  filter(!strata_name %in% core_strata$strata_name)
-
-strata_incl <- strata_incl %>%
-  mutate(periphery = ifelse(strata_name %in% core_strata$strata_name,
-                            0,
-                            1))
-
-
-saveRDS(strata_incl,"data/strata_w_core_indicator.rds")
-
-# tst <- ggplot()+
-#   geom_sf(data = core_strata)+
-#   geom_sf(data = bcrs,
-#           fill = NA)
-#
-# tst
-
-periphery <- as.integer(strata_incl$periphery)
-core = which(periphery == 0)
-mean_cov_core <- colMeans(cov_incl[core,])
-cov_core <- matrix(as.numeric(mean_cov_core),
-                  nrow = 1)
-
-
-
+  ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
 
 
 
 # Fit first covariate model -----------------------------------------------
 
+cov_mod <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varying.stan")
 
 pm_cov <- prepare_model(ps,
                         model = model,
                         model_variant = model_variant,
-                        model_file = cov_mod)
+                        model_file = cov_mod,
+                        calculate_log_lik = TRUE)
 
 pm_cov$model_data[["cov"]] <- cov_incl
 pm_cov$model_data[["cov_ann"]] <- cov_ann
@@ -268,7 +262,8 @@ cov_mod2 <- paste0("models/",model,"_spatial_bbs_CV_year_effect_3covariate_varyi
 pm_cov2 <- prepare_model(ps,
                         model = model,
                         model_variant = model_variant,
-                        model_file = cov_mod2)
+                        model_file = cov_mod2,
+                        calculate_log_lik = TRUE)
 
 pm_cov2$model_data[["cov"]] <- cov_incl
 pm_cov2$model_data[["cov_ann"]] <- cov_ann
@@ -305,7 +300,8 @@ cov_mod3 <- paste0("models/",model,"_spatial_bbs_CV_year_effect_2covariate_varyi
 pm_cov3 <- prepare_model(ps,
                          model = model,
                          model_variant = model_variant,
-                         model_file = cov_mod3)
+                         model_file = cov_mod3,
+                         calculate_log_lik = TRUE)
 
 pm_cov3$model_data[["cov"]] <- cov_incl
 pm_cov3$model_data[["cov_ann"]] <- cov_ann
@@ -327,8 +323,6 @@ fit_cov3 <- run_model(pm_cov3,
 
 summ <- get_summary(fit_cov3)
 saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_core.rds"))
-
-#}#3nd of time-series loops
 
 
 
