@@ -29,7 +29,7 @@ In the base model, we modeled the observed counts ($C_{r,j,t}$) of Black Terns o
 
 #### Weather model
 
-We built the weather model by starting with the base model and adding a sub-model to estimate the year-effects using two weather-based predictors. With these predictors, the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI in that year and stratum ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in the previous year ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t}  \sim Normal(0,\sigma_{\gamma_i})$).
+We built the weather model by starting with the base model and adding a sub-model to estimate the year-effects using two weather-based predictors. With these predictors, the annual fluctuations in stratum-i and year-t ($\gamma_{i,t}$) were an additive combination of the effect of SPEI in that year and stratum ($\beta_{1_i}{SPEI}_{i,t}$), the effect of the NAOI in the previous year ($\beta_{2_i}{NAOI}_{t-1}$), and an additional random variate ($\varepsilon_{i,t} \sim Normal(0,\sigma_{\gamma_i})$).
 
 $$\gamma_{i,t}= \beta_{1_i}{SPEI}_{i,t}+\beta_{2_i}{NAOI}_{t-1}+\varepsilon_{i,t}$$
 

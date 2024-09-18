@@ -6,6 +6,11 @@
 library(bbsBayes2)
 library(tidyverse)
 
+
+
+# Data setup --------------------------------------------------------------
+
+
 species <- "Black Tern"
 stratification <- "latlong"
 
@@ -30,7 +35,9 @@ model_variant <- "spatial"
 
 
 s <- stratify(by = "latlong",
-              species = species)
+              species = species,
+              release = 2023) #
+
 ey <-2022
 sy <-1970
 #
@@ -49,6 +56,7 @@ sy <-1970
 
 
 run_base <- TRUE
+run_alt_base <- TRUE
 
   ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
 
@@ -85,18 +93,6 @@ run_base <- TRUE
     select(-strata) %>%
     as.matrix()
 
-  ## global annual covariate
-  lag_nao <- 1 #1-year lag for NAO data
-  nao <- readRDS("data/nao.rds")
-  nao <- nao %>%
-    rowwise() %>%
-    mutate(.,winter = mean(c(January:May))) %>%
-    filter(year %in% c(years_incl-lag_nao)) %>%
-    arrange(year)
-
-  cov_ann <- matrix(as.numeric(nao$winter),
-                    nrow = 1)
-
 
   ## mean moisture in strata within core of species' range
 
@@ -119,13 +115,13 @@ run_base <- TRUE
   periphery_incl <- strata_incl %>%
     filter(!strata_name %in% core_strata$strata_name)
 
-  strata_incl <- strata_incl %>%
-    mutate(periphery = ifelse(strata_name %in% core_strata$strata_name,
-                              0,
-                              1))
-
-
-  saveRDS(strata_incl,"data/strata_w_core_indicator.rds")
+  # strata_incl <- strata_incl %>%
+  #   mutate(periphery = ifelse(strata_name %in% core_strata$strata_name,
+  #                             0,
+  #                             1))
+  #
+#
+#   saveRDS(strata_incl,"data/strata_w_core_indicator.rds")
 
   # tst <- ggplot()+
   #   geom_sf(data = core_strata)+
@@ -134,6 +130,8 @@ run_base <- TRUE
   #
   # tst
 
+  strata_incl <- readRDS("data/strata_w_core_indicator.rds")
+
   periphery <- as.integer(strata_incl$periphery)
   core = which(periphery == 0)
   mean_cov_core <- colMeans(cov_incl[core,])
@@ -141,6 +139,65 @@ run_base <- TRUE
                      nrow = 1)
 
 
+
+  ## global annual covariate
+  lag_nao <- 1 #1-year lag for NAO data
+  nao <- readRDS("data/nao.rds")
+  nao <- nao %>%
+    rowwise() %>%
+    mutate(.,winter = mean(c(January:May))) %>%
+    filter(year %in% c(years_incl-lag_nao)) %>%
+    arrange(year)
+
+  cov_ann <- matrix(as.numeric(nao$winter),
+                    nrow = 1)
+
+
+
+
+# alternate spei covariates using 3-month spei ---------------------------------
+
+
+
+
+  n_months <- "03"
+
+  cov_all3 <- readRDS(paste0("data/annual_latlong_june_spei",n_months,".rds"))
+
+
+  cov_incl3 <-  strata_incl %>%
+    inner_join(.,cov_all3,
+               by = "strata_name") %>%
+    select(matches(as.character(years_incl)),
+           strata) %>%
+    arrange(strata) %>%
+    select(-strata) %>%
+    as.matrix()
+
+
+  cov_lag_incl3 <-  strata_incl %>%
+    inner_join(.,cov_all3,
+               by = "strata_name") %>%
+    select(matches(as.character(years_incl_lag)),
+           strata) %>%
+    arrange(strata) %>%
+    select(-strata) %>%
+    as.matrix()
+
+
+  ## mean moisture in strata within core of species' range
+
+  # ID BCR 11 strata
+  #
+
+
+  mean_cov_core3 <- colMeans(cov_incl3[core,])
+  cov_core3 <- matrix(as.numeric(mean_cov_core3),
+                     nrow = 1)
+
+
+
+# Run Base model ----------------------------------------------------------
 
 
 if(run_base){
@@ -164,7 +221,33 @@ saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_base.rds"))
 
 
 }
-# Covariate version -------------------------------------------------------
+
+
+
+  if(run_alt_base){
+    pm_fd <- prepare_model(ps,
+                        model = "first_diff",
+                        model_variant = model_variant,
+                        calculate_log_lik = TRUE)
+
+
+    fit_fd <- run_model(pm_fd,
+                     refresh = 400,
+                     iter_warmup = 2000,
+                     iter_sampling = 4000,
+                     thin = 2,
+                     max_treedepth = 11,
+                     adapt_delta = 0.8,
+                     output_dir = "output",
+                     output_basename = paste0("first_diff","_",sy,"_",ey,"_base"))
+    summ <- get_summary(fit_fd)
+    saveRDS(summ, paste0("summary_","first_diff","_",sy,"_",ey,"_base.rds"))
+
+
+  }
+
+
+  # Covariate version -------------------------------------------------------
 
 # this was run once to create a base file to modify
 # bbsBayes2::copy_model_file(model,model_variant,
@@ -265,10 +348,10 @@ pm_cov2 <- prepare_model(ps,
                         model_file = cov_mod2,
                         calculate_log_lik = TRUE)
 
-pm_cov2$model_data[["cov"]] <- cov_incl
+pm_cov2$model_data[["cov"]] <- cov_incl3
 pm_cov2$model_data[["cov_ann"]] <- cov_ann
 
-pm_cov2$model_data[["cov_lag"]] <- cov_lag_incl
+pm_cov2$model_data[["cov_lag"]] <- cov_lag_incl3
 
 
 
@@ -323,6 +406,44 @@ fit_cov3 <- run_model(pm_cov3,
 
 summ <- get_summary(fit_cov3)
 saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_2covariate_varying_core.rds"))
+
+
+
+
+
+# Fit core moisture effect model ------------------------------------------
+
+
+cov_mod4 <- paste0("models/",model,"_spatial_bbs_CV_year_effect_3covariate_varying_core.stan")
+
+
+pm_cov4 <- prepare_model(ps,
+                         model = model,
+                         model_variant = model_variant,
+                         model_file = cov_mod4,
+                         calculate_log_lik = TRUE)
+
+pm_cov4$model_data[["cov"]] <- cov_incl
+pm_cov4$model_data[["cov_ann"]] <- cov_ann
+
+pm_cov4$model_data[["cov_core"]] <- cov_core
+pm_cov4$model_data[["periphery"]] <- periphery
+
+
+
+fit_cov4 <- run_model(pm_cov4,
+                      refresh = 200,
+                      iter_warmup = 2000,
+                      iter_sampling = 4000,
+                      thin = 2,
+                      max_treedepth = 11,
+                      adapt_delta = 0.8,
+                      output_dir = "output",
+                      output_basename = paste0(model,"_",sy,"_",ey,"_3covariate_varying_core"))
+
+summ <- get_summary(fit_cov4)
+saveRDS(summ, paste0("summary_",model,"_",sy,"_",ey,"_3covariate_varying_core.rds"))
+
 
 
 
