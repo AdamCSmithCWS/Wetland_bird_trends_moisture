@@ -33,12 +33,12 @@ library(exactextractr)
 strata_map <- bbsBayes2::load_map("latlong")
 strata_crs <- st_crs(strata_map)
 
-# load moisture data - SPEI 3 month values at monthly scale
+# load moisture data - SPEI values at monthly scale
 # downloaded from https://doi.org/10.20350/digitalCSIC/15470
 
 ## S.M. Vicente-Serrano, S. Beguería, J.I. López-Moreno. 2010. A Multi-scalar drought index sensitive to global warming: The Standardized Precipitation Evapotranspiration Index – SPEI. Journal of Climate 23: 1696, DOI: 10.1175/2009JCLI2909.1
 n_months <- "15"
-# These are the means for the preceeding 3 months "spei03"
+# These are the means for the preceeding n_months months "spei03" = 3 months, spei15 = previous 15 months.
 moisture_full = terra::rast(paste0("data/too_large/spei",n_months,".nc"))
 
 strata_map = st_transform(strata_map, st_crs(moisture_full))

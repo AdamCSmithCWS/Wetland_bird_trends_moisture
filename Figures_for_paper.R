@@ -210,10 +210,12 @@ trends_plot <- ggplot(data = trends_highlevel,
                 position = position_dodge(width = 0.3))+
   geom_point(position = position_dodge(width = 0.3))+
   theme_bw()+
+  map_theme +
   xlab("")+
   ylab("Trend (%/year)")+
   scale_colour_viridis_d(aesthetics = c("colour","fill"),
-                         end = 0.9)
+                         end = 0.8,
+                         option = "inferno")
 trends_plot
 
 comb <- trends_plot + m + plot_layout(design = "11
@@ -381,7 +383,7 @@ base_map <- load_map(ps$meta_data$stratify_by) %>%
   inner_join(ps$meta_strata,
              by = "strata_name")
 
-bbox <- sf::st_bbox(base_map)
+bb <- sf::st_bbox(base_map)
 
 
 map_naoi_se <- base_map %>%
@@ -441,7 +443,7 @@ both <- naoi_map / naoi_map_se
 both
 
 
-pdf("final_figures/Figure4.pdf",
+pdf("final_figures/Figure4_alt.pdf",
     width = 3.5,height = 5.5)
 print(both)
 dev.off()
@@ -557,6 +559,13 @@ for(model in c("base","2covariate_varying_15",
   saveRDS(inds_plotting,
           paste0("output/indices_df_compare_",sy,"_",ey,".rds"))
 
+  saveRDS(trends_save,
+          paste0("output/trends_df_compare_",sy,"_",ey,".rds"))
+
+
+
+  inds_plotting <- readRDS(paste0("output/indices_df_compare_",sy,"_",ey,".rds"))
+  trends_save <- readRDS(paste0("output/trends_df_compare_",sy,"_",ey,".rds"))
 
 
   trends_highlevel <- trends_save %>%
@@ -593,15 +602,58 @@ for(model in c("base","2covariate_varying_15",
     facet_grid(rows = vars(Region))
 
 
+  trajs_highlevel1 <- inds_plotting %>%
+    filter(region_type %in% c("continent"),
+           year > 2004)%>%
+    mutate(Region = str_to_title(region),
+           model_name = ifelse(model_type == "base",
+                               "Base",
+                               "Climate plus core"),
+           model_name = ifelse(model_type == "2covariate_varying_15",
+                               "Climate",
+                               model_name),
+           time_period = "Short-term")
+
+  trajs_highlevel <- inds_plotting %>%
+    filter(region_type %in% c("continent"))%>%
+    mutate(Region = str_to_title(region),
+           model_name = ifelse(model_type == "base",
+                               "Base",
+                               "Climate plus core"),
+           model_name = ifelse(model_type == "2covariate_varying_15",
+                               "Climate",
+                               model_name),
+           time_period = "Long-term")
+
+
+  traj_comp <- ggplot(data = trajs_highlevel,
+                      aes(x = year,y = index))+
+    geom_ribbon(aes(ymin = index_q_0.05,ymax = index_q_0.95,
+                    fill = model_name),
+                alpha = 0.3)+
+    geom_line(aes(colour = model_name))+
+    scale_colour_viridis_d(aesthetics = c("colour","fill"),
+                           end = 0.9,
+                           name = "Model")+
+    scale_y_continuous(transform = "log10")+
+    ylab("Index of abundance")+
+    theme_bw()+
+    theme(legend.position = "none",
+          line = ggplot2::element_line(linewidth = 0.4),
+          rect = ggplot2::element_rect(linewidth = 0.1),
+          text = element_text(family = "serif",
+                              size = 7))+
+    facet_grid(rows = vars(Region))
+
+  stack_plot <- traj_comp / trends_plot + plot_layout(heights = c(1,3))
 
   pdf("final_figures/Figure5.pdf",
-      width = 3.5,height = 4.5)
-  print(trends_plot)
+      width = 3.5,height = 5.5)
+  print(stack_plot)
   dev.off()
 
 
 #
-
 
 
 

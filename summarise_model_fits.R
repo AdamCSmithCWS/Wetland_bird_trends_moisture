@@ -59,7 +59,10 @@ loo_cov_lag <- fit_cov_lag$model_fit$loo()
 loo_cov_core <- fit_cov_core$model_fit$loo()
 
 
-loo_compare(loo_base,loo_cov,loo_cov_lag,loo_cov_core)
+loo_comp_out <- as.data.frame(loo_compare(loo_base,loo_cov,loo_cov_lag,loo_cov_core))
+
+write_csv(loo_comp_out,
+          "loo_comparison.csv")
 loo_compare(loo_cov,loo_cov_lag,loo_cov_core)
 
 pointwise <- fit_base$raw_data

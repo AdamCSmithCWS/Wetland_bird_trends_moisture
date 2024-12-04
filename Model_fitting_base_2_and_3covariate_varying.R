@@ -61,6 +61,7 @@ run_alt_base <- TRUE
   ps <- readRDS(paste0("data/prepared_data_",sy,"-",ey,".rds"))
 
 
+# SPEI --------------------------------------------------------------------
 
   lag_time_spei <- 1 # number of years for moisture covariate lag
 
@@ -140,8 +141,10 @@ run_alt_base <- TRUE
 
 
 
+# NAOI --------------------------------------------------------------------
+
   ## global annual covariate
-  lag_nao <- 1 #1-year lag for NAO data
+  lag_nao <- 0 #1-year lag for NAO data
   nao <- readRDS("data/nao.rds")
   nao <- nao %>%
     rowwise() %>%
